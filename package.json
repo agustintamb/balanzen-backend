@@ -9,7 +9,10 @@
     "start:local": "NODE_ENV=local node src/index.js",
     "start:testing": "NODE_ENV=testing node src/index.js",
     "start:prod": "NODE_ENV=production node src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -26,6 +29,12 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.4.0",
+    "nodemon": "^3.1.4",
+    "prettier": "^3.8.1"
   }
 }
