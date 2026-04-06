@@ -1,0 +1,30 @@
+name: Check PR base branch
+
+on:
+  pull_request:
+    branches:
+      - main
+      - testing
+
+jobs:
+  check-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR direction
+        run: |
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+
+          echo "PR: $HEAD → $BASE"
+
+          if [ "$BASE" = "main" ] && [ "$HEAD" != "testing" ]; then
+            echo "❌ Solo se puede mergear a main desde testing"
+            exit 1
+          fi
+
+          if [ "$BASE" = "testing" ] && [ "$HEAD" != "develop" ]; then
+            echo "❌ Solo se puede mergear a testing desde develop"
+            exit 1
+          fi
+
+          echo "✅ Dirección del PR correcta"
