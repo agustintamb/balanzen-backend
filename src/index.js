@@ -1,10 +1,10 @@
-// Cargar variables de entorno PRIMERO, antes de cualquier otro import
-import envConfig from "./config/env.config.js";
-
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
 
+import envConfig from "./config/env.config.js";
+import swaggerSpec from "./config/swagger.config.js";
 import connectDB from "./config/database.config.js";
 import routes from "./routes/index.js";
 
@@ -33,6 +33,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(envConfig.env === "production" ? "combined" : "dev"));
+
+// ─── SWAGGER ──────────────────────────────────────────────────────────────────
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ─── RUTAS ────────────────────────────────────────────────────────────────────
 app.use("/api/v1", routes);
