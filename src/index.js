@@ -79,7 +79,7 @@ const start = async () => {
     console.log(`\n🚀  Balanzen API corriendo`);
     console.log(`    Ambiente  : ${envConfig.env}`);
     console.log(`    Puerto    : ${envConfig.port}`);
-    console.log(`    Health    : http://localhost:${envConfig.port}/api/v1/health\n`);
+    console.log(`    Health    : ${envConfig.baseUrl}/api/v1/health\n`);
   });
 };
 

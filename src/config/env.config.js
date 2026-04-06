@@ -16,7 +16,8 @@ if (result.error) {
 
 export default {
   env,
-  port: process.env.PORT || 8000,
+  baseUrl: process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`,
+  port: process.env.PORT || 3001,
   mongodbUri: process.env.MONGODB_URI,
   jwt: {
     secret: process.env.JWT_SECRET,
