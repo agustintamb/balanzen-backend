@@ -48,6 +48,15 @@ npm run dev
 
 La API queda disponible en `http://localhost:3001`.
 
+## Tests
+
+El proyecto usa [Vitest](https://vitest.dev/) con [mongodb-memory-server](https://github.com/nodkz/mongodb-memory-server). Los tests no requieren una instancia de MongoDB corriendo.
+
+```bash
+npm run test:run   # Corre una vez (CI)
+npm test           # Modo watch (desarrollo)
+```
+
 ## Endpoints principales
 
 | Ruta | Descripción |
