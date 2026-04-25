@@ -6,12 +6,13 @@ const env = process.env.NODE_ENV || "local";
 const envFile = `.env.${env}`;
 const envPath = path.resolve(process.cwd(), envFile);
 
-const result = dotenv.config({ path: envPath });
-
-if (result.error) {
-  console.warn(`⚠️  No se encontró ${envFile}, usando variables de entorno del sistema`);
-} else {
-  console.log(`✅  Ambiente cargado: ${envFile}`);
+if (env !== "test") {
+  const result = dotenv.config({ path: envPath });
+  if (result.error) {
+    console.warn(`⚠️  No se encontró ${envFile}, usando variables de entorno del sistema`);
+  } else {
+    console.log(`✅  Ambiente cargado: ${envFile}`);
+  }
 }
 
 export default {
@@ -21,7 +22,9 @@ export default {
   mongodbUri: process.env.MONGODB_URI,
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    expiresIn: process.env.JWT_EXPIRES_IN || "15m",
+    refreshSecret: process.env.JWT_REFRESH_SECRET,
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,

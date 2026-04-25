@@ -59,8 +59,20 @@ npm test           # Modo watch (desarrollo)
 
 ## Endpoints principales
 
-| Ruta | Descripción |
-|------|-------------|
-| `GET /` | Info de la API |
-| `GET /api/v1/health` | Health check |
-| `GET /api/docs` | Documentación Swagger |
+| Ruta | Auth | Descripción |
+|------|------|-------------|
+| `GET /` | — | Info de la API |
+| `GET /api/v1/health` | — | Health check |
+| `GET /api/docs` | — | Documentación Swagger |
+| `POST /api/v1/auth/register` | — | Registra CONSUMIDOR o COMERCIO |
+| `POST /api/v1/auth/login` | — | Inicia sesión, retorna tokens |
+| `POST /api/v1/auth/refresh` | JWT | Renueva el access token |
+| `POST /api/v1/auth/logout` | JWT | Cierra sesión e invalida refresh token |
+| `GET /api/v1/users/me` | JWT | Perfil completo del usuario |
+| `PUT /api/v1/users/me` | JWT | Actualiza perfil del usuario |
+| `GET /api/v1/addresses/search?q=` | JWT | Busca direcciones por texto (geocoding) |
+| `GET /api/v1/addresses` | JWT | Lista las direcciones del usuario |
+| `POST /api/v1/addresses` | JWT | Crea una nueva dirección |
+| `PUT /api/v1/addresses/:id` | JWT | Actualiza una dirección propia |
+| `DELETE /api/v1/addresses/:id` | JWT | Elimina una dirección (soft delete) |
+| `PUT /api/v1/addresses/:id/select` | JWT | Marca una dirección como activa |

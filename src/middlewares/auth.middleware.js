@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import envConfig from "../config/env.config.js";
+import envConfig from "#config/env.config.js";
 
 const { jwt: jwtConfig } = envConfig;
 

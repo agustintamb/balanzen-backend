@@ -3,10 +3,10 @@ import cors from "cors";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 
-import envConfig from "./config/env.config.js";
-import swaggerSpec from "./config/swagger.config.js";
-import connectDB from "./config/database.config.js";
-import routes from "./routes/index.js";
+import envConfig from "#config/env.config.js";
+import swaggerSpec from "#config/swagger.config.js";
+import connectDB from "#config/database.config.js";
+import routes from "#routes/index.js";
 
 const app = express();
 
@@ -45,7 +45,7 @@ app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Balanzen API",
-    version: "1.0.0",
+    version: "1.2.0",
     docs: "/api/v1/health",
   });
 });
@@ -65,6 +65,16 @@ app.use((err, req, res, next) => {
 
   if (err?.message?.startsWith("CORS bloqueado")) {
     return res.status(403).json({ success: false, message: err.message });
+  }
+
+  // Errores de validación de Mongoose
+  if (err.name === "ValidationError") {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+
+  // Duplicate key de MongoDB
+  if (err.code === 11000) {
+    return res.status(409).json({ success: false, message: "Registro duplicado" });
   }
 
   res.status(err.status || 500).json({

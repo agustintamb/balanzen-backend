@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { softDeletePlugin } from "../middlewares/soft-delete.plugin.js";
-import { generateId } from "../utils/uuid.helper.js";
+import { softDeletePlugin } from "#middlewares/soft-delete.plugin.js";
+import { generateId } from "#utils/uuid.helper.js";
 
 let mongoServer;
 let TestModel;
