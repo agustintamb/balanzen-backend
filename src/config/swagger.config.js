@@ -5,7 +5,7 @@ const options = {
     openapi: "3.0.0",
     info: {
       title: "Balanzen API",
-      version: "1.0.0",
+      version: "1.2.0",
       description: "Documentación de la API de Balanzen",
     },
     components: {

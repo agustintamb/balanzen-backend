@@ -1,31 +1,49 @@
-// auth.controller.js
-// Controladores de autenticación - implementar según necesidad
+import {
+  register as registerService,
+  login as loginService,
+  refresh as refreshService,
+  logout as logoutService,
+} from "#services/auth.service.js";
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
-    // TODO: implementar registro
-    res.status(501).json({ success: false, message: "Not implemented yet" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const data = await registerService(req.body);
+    res.status(201).json({ success: true, ...data });
+  } catch (err) {
+    next(err);
   }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
-    // TODO: implementar login
-    res.status(501).json({ success: false, message: "Not implemented yet" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const { email, password } = req.body;
+    const data = await loginService(email, password);
+    res.status(200).json({ success: true, ...data });
+  } catch (err) {
+    next(err);
   }
 };
 
-const me = async (req, res) => {
+const refresh = async (req, res, next) => {
   try {
-    // TODO: retornar usuario autenticado (req.user viene de authMiddleware)
-    res.status(501).json({ success: false, message: "Not implemented yet" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const { refresh_token } = req.body;
+    if (!refresh_token) {
+      return res.status(400).json({ success: false, message: "refresh_token requerido" });
+    }
+    const data = await refreshService(refresh_token);
+    res.status(200).json({ success: true, ...data });
+  } catch (err) {
+    next(err);
   }
 };
 
-export { register, login, me };
+const logout = async (req, res, next) => {
+  try {
+    await logoutService(req.user.id);
+    res.status(200).json({ success: true, message: "Sesión cerrada correctamente" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { register, login, refresh, logout };

@@ -1,9 +1,20 @@
 {
   "name": "balanzen-backend",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Balanzen API - Express backend",
   "main": "src/index.js",
   "type": "module",
+  "imports": {
+    "#config/*.js": "./src/config/*.js",
+    "#models/*.js": "./src/models/*.js",
+    "#services/*.js": "./src/services/*.js",
+    "#controllers/*.js": "./src/controllers/*.js",
+    "#middlewares/*.js": "./src/middlewares/*.js",
+    "#routes/*.js": "./src/routes/*.js",
+    "#utils/*.js": "./src/utils/*.js",
+    "#assets/*.js": "./src/assets/*.js",
+    "#tests/*.js": "./src/tests/*.js"
+  },
   "scripts": {
     "dev": "cross-env NODE_ENV=local nodemon src/index.js",
     "start:local": "cross-env NODE_ENV=local node src/index.js",
@@ -14,7 +25,8 @@
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "seed": "cross-env NODE_ENV=local node src/assets/seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
