@@ -6,3 +6,6 @@ node_modules/
 *.log
 dist/
 coverage/
+
+CLAUDE.md
+docs/
