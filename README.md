@@ -36,7 +36,6 @@ Luego editar `.env.local` con los valores correspondientes.
 5. Crear una base de datos llamada `balanzen_local` (Compass la crea automáticamente al primer insert)
 
 La variable `MONGODB_URI` en `.env.local` debe apuntar a:
-
 ```
 mongodb://localhost:27017/balanzen_local
 ```
@@ -59,17 +58,17 @@ npm run seed
 
 **Credenciales del seed:**
 
-| Usuario | Email | Contraseña |
-|---------|-------|-----------|
-| Admin | admin@balanzen.com | Admin123 |
-| Verdulería Don Mario | mario@comercio.com | Test1234 |
-| Panadería La Estrella | estrella@comercio.com | Test1234 |
-| Almacén El Rincón | rincon@comercio.com | Test1234 |
-| Juan Pérez | juan@mail.com | Test1234 |
-| Ana García | ana@mail.com | Test1234 |
-| Luis Martínez | luis@mail.com | Test1234 |
-| María López | maria@mail.com | Test1234 |
-| Pedro Fernández | pedro@mail.com | Test1234 |
+| Usuario               | Email                 | Contraseña |
+| --------------------- | --------------------- | ---------- |
+| Admin                 | admin@balanzen.com    | Admin123   |
+| Verdulería Don Mario  | mario@comercio.com    | Test1234   |
+| Panadería La Estrella | estrella@comercio.com | Test1234   |
+| Almacén El Rincón     | rincon@comercio.com   | Test1234   |
+| Juan Pérez            | juan@mail.com         | Test1234   |
+| Ana García            | ana@mail.com          | Test1234   |
+| Luis Martínez         | luis@mail.com         | Test1234   |
+| María López           | maria@mail.com        | Test1234   |
+| Pedro Fernández       | pedro@mail.com        | Test1234   |
 
 ## Tests
 
@@ -94,21 +93,21 @@ El servidor expone un endpoint de WebSocket en `/ws`. Los clientes deben autenti
 
 **Eventos del cliente → servidor:**
 
-| Evento | Payload | Descripción |
-|--------|---------|-------------|
-| `authenticate` | `{ token }` | Autentica la conexión |
-| `join_chat` | `{ order_id }` | Se une a la sala del chat |
-| `leave_chat` | `{ order_id }` | Abandona la sala |
-| `typing` | `{ order_id }` | Indica que está escribiendo |
+| Evento         | Payload        | Descripción                 |
+| -------------- | -------------- | --------------------------- |
+| `authenticate` | `{ token }`    | Autentica la conexión       |
+| `join_chat`    | `{ order_id }` | Se une a la sala del chat   |
+| `leave_chat`   | `{ order_id }` | Abandona la sala            |
+| `typing`       | `{ order_id }` | Indica que está escribiendo |
 
 **Eventos del servidor → cliente:**
 
-| Evento | Descripción |
-|--------|-------------|
-| `new_message` | Nuevo mensaje en un chat activo |
-| `user_typing` | Un usuario está escribiendo |
-| `user_online` | Estado de conexión |
-| `new_notification` | Nueva notificación persistente |
+| Evento             | Descripción                     |
+| ------------------ | ------------------------------- |
+| `new_message`      | Nuevo mensaje en un chat activo |
+| `user_typing`      | Un usuario está escribiendo     |
+| `user_online`      | Estado de conexión              |
+| `new_notification` | Nueva notificación persistente  |
 
 ## Cron Jobs
 
@@ -121,93 +120,93 @@ El servidor ejecuta dos jobs horarios automáticamente:
 
 ### Auth
 
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| POST | `/api/v1/auth/register` | — | Registra CONSUMIDOR o COMERCIO |
-| POST | `/api/v1/auth/login` | — | Inicia sesión, retorna tokens |
-| POST | `/api/v1/auth/refresh` | JWT | Renueva el access token |
-| POST | `/api/v1/auth/logout` | JWT | Cierra sesión e invalida refresh token |
+| Método | Ruta                    | Auth | Descripción                            |
+| ------ | ----------------------- | ---- | -------------------------------------- |
+| POST   | `/api/v1/auth/register` | —    | Registra CONSUMIDOR o COMERCIO         |
+| POST   | `/api/v1/auth/login`    | —    | Inicia sesión, retorna tokens          |
+| POST   | `/api/v1/auth/refresh`  | JWT  | Renueva el access token                |
+| POST   | `/api/v1/auth/logout`   | JWT  | Cierra sesión e invalida refresh token |
 
 ### Users
 
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/v1/users/me` | JWT | Perfil completo del usuario autenticado |
-| PUT | `/api/v1/users/me` | JWT | Actualiza perfil (campos según rol) |
+| Método | Ruta               | Auth | Descripción                             |
+| ------ | ------------------ | ---- | --------------------------------------- |
+| GET    | `/api/v1/users/me` | JWT  | Perfil completo del usuario autenticado |
+| PUT    | `/api/v1/users/me` | JWT  | Actualiza perfil (campos según rol)     |
 
 ### Addresses
 
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/v1/addresses/search?q=` | JWT | Busca direcciones por texto (geocoding) |
-| GET | `/api/v1/addresses` | JWT | Lista las direcciones del usuario |
-| POST | `/api/v1/addresses` | JWT | Crea una nueva dirección |
-| PUT | `/api/v1/addresses/:id` | JWT | Actualiza una dirección propia |
-| DELETE | `/api/v1/addresses/:id` | JWT | Elimina una dirección (soft delete) |
-| PUT | `/api/v1/addresses/:id/select` | JWT | Marca una dirección como activa |
+| Método | Ruta                           | Auth | Descripción                             |
+| ------ | ------------------------------ | ---- | --------------------------------------- |
+| GET    | `/api/v1/addresses/search?q=`  | JWT  | Busca direcciones por texto (geocoding) |
+| GET    | `/api/v1/addresses`            | JWT  | Lista las direcciones del usuario       |
+| POST   | `/api/v1/addresses`            | JWT  | Crea una nueva dirección                |
+| PUT    | `/api/v1/addresses/:id`        | JWT  | Actualiza una dirección propia          |
+| DELETE | `/api/v1/addresses/:id`        | JWT  | Elimina una dirección (soft delete)     |
+| PUT    | `/api/v1/addresses/:id/select` | JWT  | Marca una dirección como activa         |
 
 ### Categories
 
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/v1/categories` | JWT | Lista categorías activas |
+| Método | Ruta                 | Auth | Descripción              |
+| ------ | -------------------- | ---- | ------------------------ |
+| GET    | `/api/v1/categories` | JWT  | Lista categorías activas |
 
 ### Uploads
 
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| POST | `/api/v1/uploads/image` | JWT | Sube una imagen a Cloudinary (multipart) |
-| DELETE | `/api/v1/uploads/image` | JWT | Elimina una imagen de Cloudinary por URL |
+| Método | Ruta                    | Auth | Descripción                              |
+| ------ | ----------------------- | ---- | ---------------------------------------- |
+| POST   | `/api/v1/uploads/image` | JWT  | Sube una imagen a Cloudinary (multipart) |
+| DELETE | `/api/v1/uploads/image` | JWT  | Elimina una imagen de Cloudinary por URL |
 
 ### Publications
 
-| Método | Ruta | Auth | Rol | Descripción |
-|--------|------|------|-----|-------------|
-| POST | `/api/v1/publications` | JWT | COMERCIO | Crea una publicación |
-| GET | `/api/v1/publications` | JWT | CONSUMIDOR | Lista publicaciones activas con filtros |
-| GET | `/api/v1/publications/me` | JWT | COMERCIO | Mis publicaciones (todos los estados) |
-| GET | `/api/v1/publications/:id` | JWT | — | Detalle de una publicación |
-| PUT | `/api/v1/publications/:id` | JWT | COMERCIO | Edita una publicación (solo si ACTIVE) |
-| DELETE | `/api/v1/publications/:id` | JWT | COMERCIO | Da de baja (ACTIVE → CANCELLED) |
+| Método | Ruta                       | Auth | Rol        | Descripción                             |
+| ------ | -------------------------- | ---- | ---------- | --------------------------------------- |
+| POST   | `/api/v1/publications`     | JWT  | COMERCIO   | Crea una publicación                    |
+| GET    | `/api/v1/publications`     | JWT  | CONSUMIDOR | Lista publicaciones activas con filtros |
+| GET    | `/api/v1/publications/me`  | JWT  | COMERCIO   | Mis publicaciones (todos los estados)   |
+| GET    | `/api/v1/publications/:id` | JWT  | —          | Detalle de una publicación              |
+| PUT    | `/api/v1/publications/:id` | JWT  | COMERCIO   | Edita una publicación (solo si ACTIVE)  |
+| DELETE | `/api/v1/publications/:id` | JWT  | COMERCIO   | Da de baja (ACTIVE → CANCELLED)         |
 
 **Filtros de `GET /publications`:** `category_id`, `min_discount`, `max_price`, `donation`, `search`, `sort_by` (created_at, discount_pct, expiry_date, final_price, distance), `sort_order`, `lat`, `lng`, `radius_km`, `page`, `limit`.
 
 ### Orders
 
-| Método | Ruta | Auth | Rol | Descripción |
-|--------|------|------|-----|-------------|
-| POST | `/api/v1/orders` | JWT | CONSUMIDOR | Crea una reserva |
-| GET | `/api/v1/orders` | JWT | — | Lista pedidos del usuario autenticado |
-| GET | `/api/v1/orders/:id` | JWT | — | Detalle de un pedido |
-| PUT | `/api/v1/orders/:id/cancel` | JWT | — | Cancela un pedido (ambas partes) |
-| PUT | `/api/v1/orders/:id/deliver` | JWT | COMERCIO | Marca un pedido como entregado |
+| Método | Ruta                         | Auth | Rol        | Descripción                           |
+| ------ | ---------------------------- | ---- | ---------- | ------------------------------------- |
+| POST   | `/api/v1/orders`             | JWT  | CONSUMIDOR | Crea una reserva                      |
+| GET    | `/api/v1/orders`             | JWT  | —          | Lista pedidos del usuario autenticado |
+| GET    | `/api/v1/orders/:id`         | JWT  | —          | Detalle de un pedido                  |
+| PUT    | `/api/v1/orders/:id/cancel`  | JWT  | —          | Cancela un pedido (ambas partes)      |
+| PUT    | `/api/v1/orders/:id/deliver` | JWT  | COMERCIO   | Marca un pedido como entregado        |
 
 ### Chat
 
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/v1/chats` | JWT | Lista conversaciones del usuario |
-| GET | `/api/v1/chats/:orderId/messages` | JWT | Mensajes de un chat (paginados) |
-| POST | `/api/v1/chats/:orderId/messages` | JWT | Envía un mensaje (orden debe estar RESERVED) |
+| Método | Ruta                              | Auth | Descripción                                  |
+| ------ | --------------------------------- | ---- | -------------------------------------------- |
+| GET    | `/api/v1/chats`                   | JWT  | Lista conversaciones del usuario             |
+| GET    | `/api/v1/chats/:orderId/messages` | JWT  | Mensajes de un chat (paginados)              |
+| POST   | `/api/v1/chats/:orderId/messages` | JWT  | Envía un mensaje (orden debe estar RESERVED) |
 
 ### Notifications
 
-| Método | Ruta | Auth | Descripción |
-|--------|------|------|-------------|
-| GET | `/api/v1/notifications` | JWT | Lista notificaciones con `unread_count` |
+| Método | Ruta                    | Auth | Descripción                             |
+| ------ | ----------------------- | ---- | --------------------------------------- |
+| GET    | `/api/v1/notifications` | JWT  | Lista notificaciones con `unread_count` |
 
 **Filtros de `GET /notifications`:** `read` (true/false), `page`, `limit`.
 
 ### Admin
 
-| Método | Ruta | Auth | Rol | Descripción |
-|--------|------|------|-----|-------------|
-| POST | `/api/v1/admin/categories` | JWT | ADMIN | Crea una categoría |
-| PUT | `/api/v1/admin/categories/:id` | JWT | ADMIN | Edita una categoría |
-| DELETE | `/api/v1/admin/categories/:id` | JWT | ADMIN | Elimina una categoría (soft delete) |
-| GET | `/api/v1/admin/publications` | JWT | ADMIN | Lista todas las publicaciones |
-| GET | `/api/v1/admin/orders` | JWT | ADMIN | Lista todas las órdenes |
-| GET | `/api/v1/admin/users/:id` | JWT | ADMIN | Perfil completo de cualquier usuario |
+| Método | Ruta                           | Auth | Rol   | Descripción                          |
+| ------ | ------------------------------ | ---- | ----- | ------------------------------------ |
+| POST   | `/api/v1/admin/categories`     | JWT  | ADMIN | Crea una categoría                   |
+| PUT    | `/api/v1/admin/categories/:id` | JWT  | ADMIN | Edita una categoría                  |
+| DELETE | `/api/v1/admin/categories/:id` | JWT  | ADMIN | Elimina una categoría (soft delete)  |
+| GET    | `/api/v1/admin/publications`   | JWT  | ADMIN | Lista todas las publicaciones        |
+| GET    | `/api/v1/admin/orders`         | JWT  | ADMIN | Lista todas las órdenes              |
+| GET    | `/api/v1/admin/users/:id`      | JWT  | ADMIN | Perfil completo de cualquier usuario |
 
 ## Scripts
 
