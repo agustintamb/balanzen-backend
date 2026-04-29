@@ -1,3 +1,4 @@
+import http from "node:http";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -6,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import envConfig from "#config/env.config.js";
 import swaggerSpec from "#config/swagger.config.js";
 import connectDB from "#config/database.config.js";
+import { initSocket } from "#config/socket.config.js";
 import routes from "#routes/index.js";
 
 const app = express();
@@ -88,7 +90,10 @@ app.use((err, req, res, next) => {
 const start = async () => {
   await connectDB();
 
-  app.listen(envConfig.port, () => {
+  const httpServer = http.createServer(app);
+  initSocket(httpServer);
+
+  httpServer.listen(envConfig.port, () => {
     console.log(`\n🚀  Balanzen API corriendo`);
     console.log(`    Ambiente  : ${envConfig.env}`);
     console.log(`    Puerto    : ${envConfig.port}`);
