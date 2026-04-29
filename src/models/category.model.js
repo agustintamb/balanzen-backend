@@ -7,6 +7,7 @@ const categorySchema = new mongoose.Schema(
     _id: { type: String, default: generateId },
     name: { type: String, required: true, maxlength: 100, trim: true },
     icon_url: { type: String, default: null },
+    active: { type: Boolean, default: true },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );

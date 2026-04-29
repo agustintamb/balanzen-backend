@@ -1,4 +1,5 @@
 import { Router } from "express";
+import authMiddleware from "#middlewares/auth.middleware.js";
 import { getCategories } from "#controllers/categories.controller.js";
 
 const router = Router();
@@ -10,6 +11,8 @@ const router = Router();
  *     tags: [Categories]
  *     summary: Lista todas las categorías activas
  *     description: Retorna las categorías disponibles ordenadas alfabéticamente.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de categorías
@@ -33,6 +36,6 @@ const router = Router();
  *                         type: string
  *                         nullable: true
  */
-router.get("/", getCategories);
+router.get("/", authMiddleware, getCategories);
 
 export default router;
