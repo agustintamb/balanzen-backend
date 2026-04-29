@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import envConfig from "#config/env.config.js";
 import { User } from "#models/user.model.js";
+import { Category } from "#models/category.model.js";
 import { hashPassword } from "#services/auth.service.js";
 
 const seed = async () => {
@@ -24,6 +25,17 @@ const seed = async () => {
       dni: "00000000",
     });
     console.log("✅  Admin creado: admin@balanzen.com / Admin123");
+  }
+
+  const CATEGORIES = ["Verduras", "Frutas", "Panificados", "Lácteos", "Carnes", "Bebidas", "Otros"];
+  for (const name of CATEGORIES) {
+    const exists = await Category.findOne({ name });
+    if (exists) {
+      console.log(`⚠️  Categoría ya existe: ${name}`);
+    } else {
+      await Category.create({ name });
+      console.log(`✅  Categoría creada: ${name}`);
+    }
   }
 
   await mongoose.disconnect();
