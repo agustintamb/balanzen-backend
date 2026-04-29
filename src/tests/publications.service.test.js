@@ -230,6 +230,19 @@ describe("getMyPublications", () => {
     expect(result.publications).toHaveLength(2);
   });
 
+  it("retorna publicaciones canceladas (soft-deleted) junto a las activas", async () => {
+    await setup();
+    const pub = await createPublication(commerceId, PUB_DATA(categoryId));
+    await deletePublication(pub.id, commerceId);
+    await createPublication(commerceId, { ...PUB_DATA(categoryId), title: "Activa" });
+
+    const result = await getMyPublications(commerceId, {});
+    expect(result.publications).toHaveLength(2);
+    const statuses = result.publications.map((p) => p.status);
+    expect(statuses).toContain("CANCELLED");
+    expect(statuses).toContain("ACTIVE");
+  });
+
   it("filtra por status", async () => {
     await setup();
     const pub = await createPublication(commerceId, PUB_DATA(categoryId));

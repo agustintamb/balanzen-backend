@@ -100,6 +100,7 @@ const start = async () => {
     console.log(`    Ambiente  : ${envConfig.env}`);
     console.log(`    Puerto    : ${envConfig.port}`);
     console.log(`    Health    : ${envConfig.baseUrl}/api/v1/health\n`);
+    console.log(`📚  Documentación disponible en: ${envConfig.baseUrl}/api/docs\n`);
   });
 };
 

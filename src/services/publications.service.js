@@ -260,12 +260,12 @@ const getMyPublications = async (commerceId, query) => {
   if (status) filter.status = status;
 
   const [publications, total] = await Promise.all([
-    Publication.find(filter)
+    Publication.findWithDeleted(filter)
       .populate("category_id", "name")
       .sort({ created_at: -1 })
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit)),
-    Publication.countDocuments(filter),
+    Publication.countDocuments(filter).setOptions({ withDeleted: true }),
   ]);
 
   const { commerce, address } = await resolveCommerceAndAddress(commerceId);
@@ -291,12 +291,12 @@ const listAllPublications = async (query) => {
   if (category_id) filter.category_id = category_id;
 
   const [publications, total] = await Promise.all([
-    Publication.find(filter)
+    Publication.findWithDeleted(filter)
       .populate("category_id", "name")
       .sort({ created_at: -1 })
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit)),
-    Publication.countDocuments(filter),
+    Publication.countDocuments(filter).setOptions({ withDeleted: true }),
   ]);
 
   const commerceIds = [...new Set(publications.map((p) => p.commerce_id))];
