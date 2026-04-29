@@ -36,10 +36,6 @@ Luego editar `.env.local` con los valores correspondientes.
 5. Crear una base de datos llamada `balanzen_local` (Compass la crea automáticamente al primer insert)
 
 La variable `MONGODB_URI` en `.env.local` debe apuntar a:
-<<<<<<< HEAD
-
-=======
->>>>>>> e21198d (Readme updated with basic instructions)
 ```
 mongodb://localhost:27017/balanzen_local
 ```
