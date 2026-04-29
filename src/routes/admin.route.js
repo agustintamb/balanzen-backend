@@ -6,6 +6,7 @@ import {
   adminUpdateCategory,
   adminDeleteCategory,
   adminListPublications,
+  adminListOrders,
 } from "#controllers/admin.controller.js";
 
 const router = Router();
@@ -134,5 +135,43 @@ router.delete("/categories/:id", adminDeleteCategory);
  *         description: Lista paginada de publicaciones
  */
 router.get("/publications", adminListPublications);
+
+/**
+ * @openapi
+ * /admin/orders:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Lista todas las órdenes (todos los estados)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [RESERVED, DELIVERED, CANCELLED]
+ *       - in: query
+ *         name: consumer_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: commerce_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Lista paginada de órdenes
+ */
+router.get("/orders", adminListOrders);
 
 export default router;
