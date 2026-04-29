@@ -1,6 +1,8 @@
 import { Router } from "express";
+import { body } from "express-validator";
 import authMiddleware from "#middlewares/auth.middleware.js";
 import roleMiddleware from "#middlewares/role.middleware.js";
+import validate from "#middlewares/validate.middleware.js";
 import {
   createOrderHandler,
   listOrdersHandler,
@@ -37,7 +39,14 @@ const router = Router();
  *       409:
  *         description: Publicación no disponible o ya tiene reserva activa
  */
-router.post("/", authMiddleware, roleMiddleware(["CONSUMIDOR"]), createOrderHandler);
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware(["CONSUMIDOR"]),
+  body("publication_id").notEmpty().withMessage("publication_id es requerido"),
+  validate,
+  createOrderHandler
+);
 
 /**
  * @openapi

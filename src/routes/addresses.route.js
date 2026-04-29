@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { body } from "express-validator";
 import {
   searchAddresses,
   getMyAddresses,
@@ -8,6 +9,7 @@ import {
   selectAddress,
 } from "#controllers/addresses.controller.js";
 import authMiddleware from "#middlewares/auth.middleware.js";
+import validate from "#middlewares/validate.middleware.js";
 
 const router = Router();
 
@@ -85,7 +87,19 @@ router.get("/", authMiddleware, getMyAddresses);
  *       409:
  *         description: El comercio ya tiene una dirección registrada
  */
-router.post("/", authMiddleware, createAddress);
+router.post(
+  "/",
+  authMiddleware,
+  body("formatted_address").notEmpty().withMessage("formatted_address es requerido"),
+  body("street").notEmpty().withMessage("street es requerido"),
+  body("number").notEmpty().withMessage("number es requerido"),
+  body("city").notEmpty().withMessage("city es requerido"),
+  body("province").notEmpty().withMessage("province es requerido"),
+  body("lat").isFloat().withMessage("lat debe ser un número"),
+  body("lng").isFloat().withMessage("lng debe ser un número"),
+  validate,
+  createAddress
+);
 
 /**
  * @openapi

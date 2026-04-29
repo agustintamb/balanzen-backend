@@ -1,6 +1,8 @@
 import { Router } from "express";
+import { body } from "express-validator";
 import { register, login, refresh, logout } from "#controllers/auth.controller.js";
 import authMiddleware from "#middlewares/auth.middleware.js";
+import validate from "#middlewares/validate.middleware.js";
 
 const router = Router();
 
@@ -72,7 +74,21 @@ const router = Router();
  *       409:
  *         description: El email ya está registrado
  */
-router.post("/register", register);
+router.post(
+  "/register",
+  body("role").isIn(["CONSUMIDOR", "COMERCIO"]).withMessage("role debe ser CONSUMIDOR o COMERCIO"),
+  body("first_name").notEmpty().withMessage("first_name es requerido"),
+  body("last_name").notEmpty().withMessage("last_name es requerido"),
+  body("email").isEmail().withMessage("Email inválido"),
+  body("password")
+    .isLength({ min: 6 })
+    .withMessage("La contraseña debe tener al menos 6 caracteres"),
+  body("confirm_password").notEmpty().withMessage("confirm_password es requerido"),
+  body("phone").notEmpty().withMessage("phone es requerido"),
+  body("dni").notEmpty().withMessage("dni es requerido"),
+  validate,
+  register
+);
 
 /**
  * @openapi
@@ -99,7 +115,13 @@ router.post("/register", register);
  *       401:
  *         description: Credenciales inválidas
  */
-router.post("/login", login);
+router.post(
+  "/login",
+  body("email").isEmail().withMessage("Email inválido"),
+  body("password").notEmpty().withMessage("password es requerido"),
+  validate,
+  login
+);
 
 /**
  * @openapi
