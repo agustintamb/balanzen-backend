@@ -1,4 +1,5 @@
 import { createCategory, updateCategory, deleteCategory } from "#services/categories.service.js";
+import { listAllPublications } from "#services/publications.service.js";
 
 const adminCreateCategory = async (req, res, next) => {
   try {
@@ -27,4 +28,13 @@ const adminDeleteCategory = async (req, res, next) => {
   }
 };
 
-export { adminCreateCategory, adminUpdateCategory, adminDeleteCategory };
+const adminListPublications = async (req, res, next) => {
+  try {
+    const result = await listAllPublications(req.query);
+    res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { adminCreateCategory, adminUpdateCategory, adminDeleteCategory, adminListPublications };

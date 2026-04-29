@@ -5,6 +5,7 @@ import {
   adminCreateCategory,
   adminUpdateCategory,
   adminDeleteCategory,
+  adminListPublications,
 } from "#controllers/admin.controller.js";
 
 const router = Router();
@@ -95,5 +96,43 @@ router.put("/categories/:id", adminUpdateCategory);
  *         description: Categoría no encontrada
  */
 router.delete("/categories/:id", adminDeleteCategory);
+
+/**
+ * @openapi
+ * /admin/publications:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Lista todas las publicaciones (todos los estados, todos los comercios)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVE, RESERVED, DELIVERED, CANCELLED, EXPIRED]
+ *       - in: query
+ *         name: commerce_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: category_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Lista paginada de publicaciones
+ */
+router.get("/publications", adminListPublications);
 
 export default router;
