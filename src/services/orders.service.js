@@ -2,6 +2,7 @@ import { Order } from "#models/order.model.js";
 import { Publication } from "#models/publication.model.js";
 import { User } from "#models/user.model.js";
 import { Address } from "#models/address.model.js";
+import { createNotification } from "#services/notification.service.js";
 
 const buildPublicationSnippet = (pub) => ({
   id: pub._id,
@@ -79,6 +80,15 @@ const createOrder = async (consumerId, publicationId) => {
     buildConsumerSnippet(consumerId),
     buildCommerceSnippet(pub.commerce_id),
   ]);
+
+  await createNotification({
+    userId: pub.commerce_id,
+    type: "NEW_RESERVATION",
+    title: "Nueva reserva",
+    message: `Tu publicación "${pub.title}" fue reservada.`,
+    referenceId: order._id,
+    referenceType: "ORDER",
+  }).catch(() => {});
 
   return {
     id: order._id,
@@ -170,6 +180,20 @@ const cancelOrder = async (id, userId) => {
   if (pub && new Date(pub.expiry_date) > new Date()) {
     await Publication.findByIdAndUpdate(order.publication_id, { status: "ACTIVE" });
   }
+
+  const isCancelledByConsumer = order.consumer_id === userId;
+  await createNotification({
+    userId: isCancelledByConsumer ? order.commerce_id : order.consumer_id,
+    type: isCancelledByConsumer
+      ? "RESERVATION_CANCELLED_BY_CONSUMER"
+      : "RESERVATION_CANCELLED_BY_COMMERCE",
+    title: "Reserva cancelada",
+    message: isCancelledByConsumer
+      ? `El consumidor canceló la reserva de "${pub?.title ?? "la publicación"}".`
+      : `El comercio canceló tu reserva de "${pub?.title ?? "la publicación"}".`,
+    referenceId: id,
+    referenceType: "ORDER",
+  }).catch(() => {});
 };
 
 const deliverOrder = async (id, commerceId) => {
@@ -190,10 +214,20 @@ const deliverOrder = async (id, commerceId) => {
     throw err;
   }
 
-  await Promise.all([
+  const [pub] = await Promise.all([
+    Publication.findWithDeleted({ _id: order.publication_id }).then((r) => r[0]),
     Order.findByIdAndUpdate(id, { status: "DELIVERED" }),
     Publication.findByIdAndUpdate(order.publication_id, { status: "DELIVERED" }),
   ]);
+
+  await createNotification({
+    userId: order.consumer_id,
+    type: "ORDER_DELIVERED",
+    title: "Pedido entregado",
+    message: `Tu pedido de "${pub?.title ?? "la publicación"}" fue marcado como entregado.`,
+    referenceId: id,
+    referenceType: "ORDER",
+  }).catch(() => {});
 };
 
 const listAllOrders = async (query) => {

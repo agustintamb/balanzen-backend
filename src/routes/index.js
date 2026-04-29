@@ -7,6 +7,8 @@ import addressesRouter from "#routes/addresses.route.js";
 import categoriesRouter from "#routes/categories.route.js";
 import publicationsRouter from "#routes/publications.route.js";
 import ordersRouter from "#routes/orders.route.js";
+import chatRouter from "#routes/chat.route.js";
+import notificationRouter from "#routes/notification.route.js";
 import uploadsRouter from "#routes/uploads.route.js";
 import adminRouter from "#routes/admin.route.js";
 
@@ -19,6 +21,8 @@ router.use("/addresses", addressesRouter);
 router.use("/categories", categoriesRouter);
 router.use("/publications", publicationsRouter);
 router.use("/orders", ordersRouter);
+router.use("/chats", chatRouter);
+router.use("/notifications", notificationRouter);
 router.use("/uploads", uploadsRouter);
 router.use("/admin", adminRouter);
 
