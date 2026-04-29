@@ -1,6 +1,8 @@
 import { Router } from "express";
+import { body } from "express-validator";
 import authMiddleware from "#middlewares/auth.middleware.js";
 import roleMiddleware from "#middlewares/role.middleware.js";
+import validate from "#middlewares/validate.middleware.js";
 import {
   adminCreateCategory,
   adminUpdateCategory,
@@ -40,7 +42,12 @@ router.use(authMiddleware, roleMiddleware(["ADMIN"]));
  *       409:
  *         description: Ya existe una categoría con ese nombre
  */
-router.post("/categories", adminCreateCategory);
+router.post(
+  "/categories",
+  body("name").notEmpty().withMessage("name es requerido"),
+  validate,
+  adminCreateCategory
+);
 
 /**
  * @openapi

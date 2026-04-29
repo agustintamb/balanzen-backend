@@ -1,5 +1,7 @@
 import { Router } from "express";
+import { body } from "express-validator";
 import authMiddleware from "#middlewares/auth.middleware.js";
+import validate from "#middlewares/validate.middleware.js";
 import {
   listChatsHandler,
   getMessagesHandler,
@@ -103,6 +105,12 @@ router.get("/:orderId/messages", authMiddleware, getMessagesHandler);
  *       409:
  *         description: El pedido no está en estado RESERVED
  */
-router.post("/:orderId/messages", authMiddleware, sendMessageHandler);
+router.post(
+  "/:orderId/messages",
+  authMiddleware,
+  body("content").notEmpty().withMessage("content es requerido"),
+  validate,
+  sendMessageHandler
+);
 
 export default router;

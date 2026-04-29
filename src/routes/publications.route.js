@@ -1,6 +1,8 @@
 import { Router } from "express";
+import { body } from "express-validator";
 import authMiddleware from "#middlewares/auth.middleware.js";
 import roleMiddleware from "#middlewares/role.middleware.js";
+import validate from "#middlewares/validate.middleware.js";
 import {
   createPublicationHandler,
   listPublicationsHandler,
@@ -83,7 +85,19 @@ router.get("/me", authMiddleware, roleMiddleware(["COMERCIO"]), getMyPublication
  *       404:
  *         description: Categoría no encontrada
  */
-router.post("/", authMiddleware, roleMiddleware(["COMERCIO"]), createPublicationHandler);
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware(["COMERCIO"]),
+  body("title").notEmpty().withMessage("title es requerido"),
+  body("description").notEmpty().withMessage("description es requerido"),
+  body("original_price").isFloat({ gt: 0 }).withMessage("original_price debe ser mayor a 0"),
+  body("final_price").isFloat({ min: 0 }).withMessage("final_price debe ser un número positivo"),
+  body("expiry_date").isISO8601().withMessage("expiry_date debe ser una fecha válida"),
+  body("category_id").notEmpty().withMessage("category_id es requerido"),
+  validate,
+  createPublicationHandler
+);
 
 /**
  * @openapi
