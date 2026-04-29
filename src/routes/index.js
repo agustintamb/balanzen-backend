@@ -5,6 +5,7 @@ import authRouter from "#routes/auth.route.js";
 import usersRouter from "#routes/users.route.js";
 import addressesRouter from "#routes/addresses.route.js";
 import categoriesRouter from "#routes/categories.route.js";
+import publicationsRouter from "#routes/publications.route.js";
 import uploadsRouter from "#routes/uploads.route.js";
 import adminRouter from "#routes/admin.route.js";
 
@@ -15,6 +16,7 @@ router.use("/auth", authRouter);
 router.use("/users", usersRouter);
 router.use("/addresses", addressesRouter);
 router.use("/categories", categoriesRouter);
+router.use("/publications", publicationsRouter);
 router.use("/uploads", uploadsRouter);
 router.use("/admin", adminRouter);
 
