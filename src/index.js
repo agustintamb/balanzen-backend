@@ -8,6 +8,7 @@ import envConfig from "#config/env.config.js";
 import swaggerSpec from "#config/swagger.config.js";
 import connectDB from "#config/database.config.js";
 import { initSocket } from "#config/socket.config.js";
+import { startPublicationJobs } from "#jobs/publication-expiry.job.js";
 import routes from "#routes/index.js";
 
 const app = express();
@@ -92,6 +93,7 @@ const start = async () => {
 
   const httpServer = http.createServer(app);
   initSocket(httpServer);
+  startPublicationJobs();
 
   httpServer.listen(envConfig.port, () => {
     console.log(`\n🚀  Balanzen API corriendo`);

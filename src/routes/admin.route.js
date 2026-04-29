@@ -7,6 +7,7 @@ import {
   adminDeleteCategory,
   adminListPublications,
   adminListOrders,
+  adminGetUser,
 } from "#controllers/admin.controller.js";
 
 const router = Router();
@@ -173,5 +174,27 @@ router.get("/publications", adminListPublications);
  *         description: Lista paginada de órdenes
  */
 router.get("/orders", adminListOrders);
+
+/**
+ * @openapi
+ * /admin/users/{id}:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Perfil completo de cualquier usuario con sus direcciones
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Perfil completo del usuario
+ *       404:
+ *         description: Usuario no encontrado
+ */
+router.get("/users/:id", adminGetUser);
 
 export default router;

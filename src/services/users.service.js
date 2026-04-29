@@ -77,4 +77,41 @@ const updateMyProfile = async (userId, role, data) => {
   return getMyProfile(userId);
 };
 
-export { getMyProfile, updateMyProfile };
+const getAdminUserProfile = async (id) => {
+  const user = await User.findById(id);
+  if (!user) {
+    const err = new Error("Usuario no encontrado");
+    err.status = 404;
+    throw err;
+  }
+
+  const addresses = await Address.find({ user_id: id });
+
+  const profile = {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    phone: user.phone,
+    dni: user.dni,
+    photo_url: user.photo_url,
+    addresses: addresses.map((a) => ({
+      id: a._id,
+      formatted_address: a.formatted_address,
+      is_selected: a.is_selected,
+    })),
+    created_at: user.created_at,
+    deleted_at: user.deleted_at,
+  };
+
+  if (user.role === "COMERCIO") {
+    profile.business_name = user.business_name;
+    profile.cuit = user.cuit;
+    profile.description = user.description;
+  }
+
+  return profile;
+};
+
+export { getMyProfile, updateMyProfile, getAdminUserProfile };
