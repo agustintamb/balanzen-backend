@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { register, login, refresh, logout } from "#controllers/auth.controller.js";
+import { register, login, refresh, logout, changePassword } from "#controllers/auth.controller.js";
 import authMiddleware from "#middlewares/auth.middleware.js";
 import validate from "#middlewares/validate.middleware.js";
 
@@ -165,4 +165,47 @@ router.post("/refresh", authMiddleware, refresh);
  */
 router.post("/logout", authMiddleware, logout);
 
+/**
+ * @openapi
+ * /auth/password:
+ *   put:
+ *     tags: [Auth]
+ *     summary: Cambia la contraseña del usuario autenticado
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [current_password, new_password, confirm_password]
+ *             properties:
+ *               current_password:
+ *                 type: string
+ *               new_password:
+ *                 type: string
+ *               confirm_password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Contraseña actualizada correctamente
+ *       400:
+ *         description: Las contraseñas no coinciden
+ *       401:
+ *         description: Contraseña actual incorrecta o no autenticado
+ */
+router.put(
+  "/password",
+  authMiddleware,
+  body("current_password").notEmpty().withMessage("current_password es requerido"),
+  body("new_password")
+    .isLength({ min: 6 })
+    .withMessage("new_password debe tener al menos 6 caracteres"),
+  body("confirm_password").notEmpty().withMessage("confirm_password es requerido"),
+  validate,
+  changePassword
+);
+
 export default router;
+
