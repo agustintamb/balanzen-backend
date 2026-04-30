@@ -1,6 +1,6 @@
 {
   "name": "balanzen-backend",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Balanzen API - Express backend",
   "main": "src/index.js",
   "type": "module",

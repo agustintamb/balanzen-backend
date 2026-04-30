@@ -48,7 +48,7 @@ app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Balanzen API",
-    version: "1.2.0",
+    version: "1.3.1",
     docs: "/api/v1/health",
   });
 });
