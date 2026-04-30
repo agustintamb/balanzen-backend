@@ -10,6 +10,7 @@ import {
   adminListPublications,
   adminListOrders,
   adminGetUser,
+  adminListUsers,
 } from "#controllers/admin.controller.js";
 
 const router = Router();
@@ -202,6 +203,42 @@ router.get("/orders", adminListOrders);
  *       404:
  *         description: Usuario no encontrado
  */
+/**
+ * @openapi
+ * /admin/users:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Lista todos los usuarios con filtros opcionales
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [CONSUMIDOR, COMERCIO, ADMIN]
+ *         description: Filtrar por rol
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar por nombre o email (case-insensitive)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Lista paginada de usuarios con selected_address
+ */
+router.get("/users", adminListUsers);
+
 router.get("/users/:id", adminGetUser);
 
 export default router;
