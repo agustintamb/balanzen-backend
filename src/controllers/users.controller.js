@@ -1,4 +1,8 @@
-import { getMyProfile, updateMyProfile } from "#services/users.service.js";
+import {
+  getMyProfile,
+  updateMyProfile,
+  getPublicProfile as getPublicProfileService,
+} from "#services/users.service.js";
 
 const getMe = async (req, res, next) => {
   try {
@@ -18,4 +22,13 @@ const updateMe = async (req, res, next) => {
   }
 };
 
-export { getMe, updateMe };
+const getPublicProfile = async (req, res, next) => {
+  try {
+    const profile = await getPublicProfileService(req.params.id);
+    res.status(200).json({ success: true, ...profile });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { getMe, updateMe, getPublicProfile };

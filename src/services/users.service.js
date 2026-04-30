@@ -114,4 +114,34 @@ const getAdminUserProfile = async (id) => {
   return profile;
 };
 
-export { getMyProfile, updateMyProfile, getAdminUserProfile };
+const getPublicProfile = async (id) => {
+  const user = await User.findById(id);
+  if (!user) {
+    const err = new Error("Usuario no encontrado");
+    err.status = 404;
+    throw err;
+  }
+
+  const profile = {
+    id: user._id,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    photo_url: user.photo_url,
+  };
+
+  if (user.role === "COMERCIO") {
+    profile.business_name = user.business_name;
+    const selectedAddress = await Address.findOne({ user_id: id, is_selected: true });
+    profile.selected_address = selectedAddress
+      ? {
+          formatted_address: selectedAddress.formatted_address,
+          lat: selectedAddress.lat,
+          lng: selectedAddress.lng,
+        }
+      : null;
+  }
+
+  return profile;
+};
+
+export { getMyProfile, updateMyProfile, getAdminUserProfile, getPublicProfile };
