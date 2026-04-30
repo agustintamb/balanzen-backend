@@ -66,4 +66,31 @@ const listNotifications = async (userId, query) => {
   };
 };
 
-export { createNotification, listNotifications };
+const markAsRead = async (notificationId, userId) => {
+  const notification = await Notification.findById(notificationId);
+  if (!notification) {
+    const err = new Error("Notificación no encontrada");
+    err.status = 404;
+    throw err;
+  }
+
+  if (notification.user_id !== userId) {
+    const err = new Error("No tenés permiso para modificar esta notificación");
+    err.status = 403;
+    throw err;
+  }
+
+  notification.read = true;
+  await notification.save();
+  return { message: "Notificación marcada como leída" };
+};
+
+const markAllAsRead = async (userId) => {
+  const result = await Notification.updateMany({ user_id: userId, read: false }, { read: true });
+  return {
+    message: "Notificaciones marcadas como leídas",
+    updated: result.modifiedCount,
+  };
+};
+
+export { createNotification, listNotifications, markAsRead, markAllAsRead };
