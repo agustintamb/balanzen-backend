@@ -11,6 +11,8 @@ import chatRouter from "#routes/chat.route.js";
 import notificationRouter from "#routes/notification.route.js";
 import uploadsRouter from "#routes/uploads.route.js";
 import adminRouter from "#routes/admin.route.js";
+import favoritesRouter from "#routes/favorites.route.js";
+import metricsRouter from "#routes/metrics.route.js";
 
 const router = Router();
 
@@ -25,5 +27,7 @@ router.use("/chats", chatRouter);
 router.use("/notifications", notificationRouter);
 router.use("/uploads", uploadsRouter);
 router.use("/admin", adminRouter);
+router.use("/favorites", favoritesRouter);
+router.use("/metrics", metricsRouter);
 
 export default router;
