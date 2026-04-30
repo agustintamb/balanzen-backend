@@ -3,6 +3,7 @@ import {
   login as loginService,
   refresh as refreshService,
   logout as logoutService,
+  changePassword as changePasswordService,
 } from "#services/auth.service.js";
 
 const register = async (req, res, next) => {
@@ -46,4 +47,13 @@ const logout = async (req, res, next) => {
   }
 };
 
-export { register, login, refresh, logout };
+const changePassword = async (req, res, next) => {
+  try {
+    await changePasswordService(req.user.id, req.body);
+    res.status(200).json({ success: true, message: "Contraseña actualizada correctamente" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { register, login, refresh, logout, changePassword };

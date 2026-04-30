@@ -172,6 +172,31 @@ const logout = async (userId) => {
   await User.findByIdAndUpdate(userId, { refresh_token: null });
 };
 
+const changePassword = async (userId, { current_password, new_password, confirm_password }) => {
+  if (new_password !== confirm_password) {
+    const err = new Error("Las contraseñas no coinciden");
+    err.status = 400;
+    throw err;
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error("Usuario no encontrado");
+    err.status = 404;
+    throw err;
+  }
+
+  const isValid = await comparePassword(current_password, user.password);
+  if (!isValid) {
+    const err = new Error("Contraseña actual incorrecta");
+    err.status = 401;
+    throw err;
+  }
+
+  const hashed = await hashPassword(new_password);
+  await User.findByIdAndUpdate(userId, { password: hashed });
+};
+
 export {
   generateToken,
   generateRefreshToken,
@@ -181,4 +206,5 @@ export {
   login,
   refresh,
   logout,
+  changePassword,
 };
