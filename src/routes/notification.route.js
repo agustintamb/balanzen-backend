@@ -1,9 +1,9 @@
 import { Router } from "express";
 import authMiddleware from "#middlewares/auth.middleware.js";
 import {
-getNotifications,
-markNotificationAsRead,
-markAllNotificationsAsRead,
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
 } from "#controllers/notification.controller.js";
 
 const router = Router();

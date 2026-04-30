@@ -2,6 +2,7 @@ import { createCategory, updateCategory, deleteCategory } from "#services/catego
 import { listAllPublications } from "#services/publications.service.js";
 import { listAllOrders } from "#services/orders.service.js";
 import { getAdminUserProfile } from "#services/users.service.js";
+import { listUsers } from "#services/admin.service.js";
 
 const adminCreateCategory = async (req, res, next) => {
   try {
@@ -57,6 +58,15 @@ const adminGetUser = async (req, res, next) => {
   }
 };
 
+const adminListUsers = async (req, res, next) => {
+  try {
+    const result = await listUsers(req.query);
+    res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export {
   adminCreateCategory,
   adminUpdateCategory,
@@ -64,4 +74,5 @@ export {
   adminListPublications,
   adminListOrders,
   adminGetUser,
+  adminListUsers,
 };

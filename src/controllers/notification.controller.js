@@ -28,4 +28,3 @@ const markAllNotificationsAsRead = async (req, res, next) => {
 };
 
 export { getNotifications, markNotificationAsRead, markAllNotificationsAsRead };
-
