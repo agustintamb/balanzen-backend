@@ -39,7 +39,6 @@ const register = async (body) => {
     business_name,
     cuit,
     description,
-    address,
   } = body;
 
   if (!["CONSUMIDOR", "COMERCIO"].includes(role)) {
@@ -54,8 +53,8 @@ const register = async (body) => {
     throw err;
   }
 
-  if (role === "COMERCIO" && (!business_name || !cuit || !address)) {
-    const err = new Error("business_name, cuit y address son requeridos para COMERCIO");
+  if (role === "COMERCIO" && (!business_name || !cuit)) {
+    const err = new Error("business_name y cuit son requeridos para COMERCIO");
     err.status = 400;
     throw err;
   }
@@ -77,15 +76,6 @@ const register = async (body) => {
   }
 
   const user = await User.create(userData);
-
-  if (role === "COMERCIO") {
-    try {
-      await Address.create({ user_id: user._id, ...address, is_selected: true });
-    } catch (err) {
-      await User.deleteOne({ _id: user._id });
-      throw err;
-    }
-  }
 
   const tokenPayload = { id: user._id, role: user.role };
   const access_token = generateToken(tokenPayload);
