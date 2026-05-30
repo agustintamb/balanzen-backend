@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
 import { register } from "#services/auth.service.js";
 import { getMyProfile, updateMyProfile } from "#services/users.service.js";
+import { createAddress, selectAddress } from "#services/addresses.service.js";
 
 const CONSUMIDOR = {
   role: "CONSUMIDOR",
@@ -25,15 +26,16 @@ const COMERCIO = {
   dni: "30987654",
   business_name: "Verdulería Don Mario",
   cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
+};
+
+const ADDRESS_DATA = {
+  formatted_address: "Av. Corrientes 1234, CABA",
+  street: "Av. Corrientes",
+  number: "1234",
+  city: "CABA",
+  province: "Buenos Aires",
+  lat: -34.6037,
+  lng: -58.3816,
 };
 
 beforeAll(connectDB);
@@ -55,6 +57,8 @@ describe("getMyProfile", () => {
 
   it("retorna perfil de comercio con selected_address y campos de negocio", async () => {
     const { id } = await register(COMERCIO);
+    const addr = await createAddress(id, "COMERCIO", ADDRESS_DATA);
+    await selectAddress(id, addr.id);
     const profile = await getMyProfile(id);
 
     expect(profile.role).toBe("COMERCIO");

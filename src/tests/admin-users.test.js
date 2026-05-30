@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
 import { register } from "#services/auth.service.js";
 import { listUsers } from "#services/admin.service.js";
+import { createAddress, selectAddress } from "#services/addresses.service.js";
 
 const COMERCIO_DATA = {
   role: "COMERCIO",
@@ -14,15 +15,16 @@ const COMERCIO_DATA = {
   dni: "30987654",
   business_name: "Verdulería Don Mario",
   cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
+};
+
+const ADDRESS_DATA = {
+  formatted_address: "Av. Corrientes 1234, CABA",
+  street: "Av. Corrientes",
+  number: "1234",
+  city: "CABA",
+  province: "Buenos Aires",
+  lat: -34.6037,
+  lng: -58.3816,
 };
 
 const CONSUMIDOR_DATA = {
@@ -41,7 +43,9 @@ afterAll(disconnectDB);
 afterEach(clearDB);
 
 const setup = async () => {
-  await Promise.all([register(COMERCIO_DATA), register(CONSUMIDOR_DATA)]);
+  const [comercio] = await Promise.all([register(COMERCIO_DATA), register(CONSUMIDOR_DATA)]);
+  const addr = await createAddress(comercio.id, "COMERCIO", ADDRESS_DATA);
+  await selectAddress(comercio.id, addr.id);
 };
 
 describe("listUsers", () => {

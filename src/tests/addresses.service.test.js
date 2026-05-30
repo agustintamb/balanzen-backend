@@ -32,15 +32,6 @@ const COMERCIO = {
   dni: "30987654",
   business_name: "Verdulería Don Mario",
   cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
 };
 
 const ADDR_1 = {
@@ -76,8 +67,9 @@ describe("getMyAddresses", () => {
 
   it("retorna direcciones con la seleccionada primero", async () => {
     const { id } = await register(CONSUMIDOR);
-    await createAddress(id, "CONSUMIDOR", ADDR_1);
+    const addr1 = await createAddress(id, "CONSUMIDOR", ADDR_1);
     await createAddress(id, "CONSUMIDOR", ADDR_2);
+    await selectAddress(id, addr1.id);
     const { addresses } = await getMyAddresses(id);
     expect(addresses).toHaveLength(2);
     expect(addresses[0].is_selected).toBe(true);
@@ -85,10 +77,10 @@ describe("getMyAddresses", () => {
 });
 
 describe("createAddress", () => {
-  it("la primera dirección del consumidor queda seleccionada", async () => {
+  it("la dirección creada queda NO seleccionada", async () => {
     const { id } = await register(CONSUMIDOR);
     const addr = await createAddress(id, "CONSUMIDOR", ADDR_1);
-    expect(addr.is_selected).toBe(true);
+    expect(addr.is_selected).toBe(false);
   });
 
   it("la segunda dirección del consumidor queda NO seleccionada", async () => {
@@ -98,9 +90,18 @@ describe("createAddress", () => {
     expect(addr2.is_selected).toBe(false);
   });
 
-  it("lanza 409 si el COMERCIO intenta crear una segunda dirección", async () => {
+  it("el COMERCIO puede crear más de una dirección", async () => {
     const { id } = await register(COMERCIO);
-    await expect(createAddress(id, "COMERCIO", ADDR_1)).rejects.toMatchObject({ status: 409 });
+    const addr1 = await createAddress(id, "COMERCIO", ADDR_1);
+    const addr2 = await createAddress(id, "COMERCIO", ADDR_2);
+    expect(addr1.is_selected).toBe(false);
+    expect(addr2.is_selected).toBe(false);
+  });
+
+  it("lanza 409 si ya existe una dirección con las mismas coordenadas", async () => {
+    const { id } = await register(CONSUMIDOR);
+    await createAddress(id, "CONSUMIDOR", ADDR_1);
+    await expect(createAddress(id, "CONSUMIDOR", ADDR_1)).rejects.toMatchObject({ status: 409 });
   });
 });
 
@@ -133,7 +134,7 @@ describe("deleteAddress", () => {
     const { id } = await register(CONSUMIDOR);
     const addr1 = await createAddress(id, "CONSUMIDOR", ADDR_1);
     await createAddress(id, "CONSUMIDOR", ADDR_2);
-    // addr1 es la seleccionada
+    await selectAddress(id, addr1.id);
     await expect(deleteAddress(id, addr1.id)).rejects.toMatchObject({ status: 400 });
   });
 
@@ -141,7 +142,7 @@ describe("deleteAddress", () => {
     const { id } = await register(CONSUMIDOR);
     const addr1 = await createAddress(id, "CONSUMIDOR", ADDR_1);
     const addr2 = await createAddress(id, "CONSUMIDOR", ADDR_2);
-    // addr1 está seleccionada, eliminamos addr2
+    await selectAddress(id, addr1.id);
     await deleteAddress(id, addr2.id);
     const { addresses } = await getMyAddresses(id);
     expect(addresses).toHaveLength(1);
@@ -155,9 +156,7 @@ describe("selectAddress", () => {
     const addr1 = await createAddress(id, "CONSUMIDOR", ADDR_1);
     const addr2 = await createAddress(id, "CONSUMIDOR", ADDR_2);
 
-    expect(addr1.is_selected).toBe(true);
-    expect(addr2.is_selected).toBe(false);
-
+    await selectAddress(id, addr1.id);
     await selectAddress(id, addr2.id);
     const { addresses } = await getMyAddresses(id);
     const selected = addresses.find((a) => a.is_selected);

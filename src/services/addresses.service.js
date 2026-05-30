@@ -61,23 +61,18 @@ const getMyAddresses = async (userId) => {
   };
 };
 
-const createAddress = async (userId, role, data) => {
-  if (role === "COMERCIO") {
-    const existing = await Address.countDocuments({ user_id: userId });
-    if (existing > 0) {
-      const err = new Error("El comercio ya tiene una dirección registrada");
-      err.status = 409;
-      throw err;
-    }
+const createAddress = async (userId, _role, data) => {
+  const duplicate = await Address.findOne({ user_id: userId, lat: data.lat, lng: data.lng });
+  if (duplicate) {
+    const err = new Error("Ya existe una dirección registrada en esa ubicación");
+    err.status = 409;
+    throw err;
   }
-
-  const addressCount = await Address.countDocuments({ user_id: userId });
-  const isFirstAddress = addressCount === 0;
 
   const address = await Address.create({
     user_id: userId,
     ...data,
-    is_selected: isFirstAddress || role === "COMERCIO",
+    is_selected: false,
   });
 
   return {
