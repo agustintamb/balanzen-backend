@@ -14,8 +14,7 @@ const router = Router();
  *     summary: Registra un nuevo usuario
  *     description: |
  *       Crea un usuario CONSUMIDOR o COMERCIO.
- *       Para COMERCIO se requieren business_name, cuit y address.
- *       El address del comercio se crea en el mismo request.
+ *       Para COMERCIO se requieren business_name y cuit.
  *     requestBody:
  *       required: true
  *       content:
@@ -48,24 +47,6 @@ const router = Router();
  *               cuit:
  *                 type: string
  *                 description: Requerido para COMERCIO
- *               address:
- *                 type: object
- *                 description: Requerido para COMERCIO
- *                 properties:
- *                   formatted_address:
- *                     type: string
- *                   street:
- *                     type: string
- *                   number:
- *                     type: string
- *                   city:
- *                     type: string
- *                   province:
- *                     type: string
- *                   lat:
- *                     type: number
- *                   lng:
- *                     type: number
  *     responses:
  *       201:
  *         description: Usuario creado exitosamente

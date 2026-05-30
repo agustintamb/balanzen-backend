@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
 import { register } from "#services/auth.service.js";
 import { getPublicProfile } from "#services/users.service.js";
+import { createAddress, selectAddress } from "#services/addresses.service.js";
 
 const COMERCIO_DATA = {
   role: "COMERCIO",
@@ -14,15 +15,16 @@ const COMERCIO_DATA = {
   dni: "30987654",
   business_name: "Verdulería Don Mario",
   cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
+};
+
+const ADDRESS_DATA = {
+  formatted_address: "Av. Corrientes 1234, CABA",
+  street: "Av. Corrientes",
+  number: "1234",
+  city: "CABA",
+  province: "Buenos Aires",
+  lat: -34.6037,
+  lng: -58.3816,
 };
 
 const CONSUMIDOR_DATA = {
@@ -43,6 +45,8 @@ afterEach(clearDB);
 describe("getPublicProfile", () => {
   it("retorna datos públicos de un COMERCIO con business_name y selected_address", async () => {
     const commerce = await register(COMERCIO_DATA);
+    const addr = await createAddress(commerce.id, "COMERCIO", ADDRESS_DATA);
+    await selectAddress(commerce.id, addr.id);
     const profile = await getPublicProfile(commerce.id);
 
     expect(profile.id).toBe(commerce.id);

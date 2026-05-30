@@ -25,15 +25,6 @@ const COMERCIO_BASE = {
   dni: "30987654",
   business_name: "Verdulería Don Mario",
   cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
 };
 
 beforeAll(connectDB);
@@ -71,11 +62,6 @@ describe("register", () => {
     });
   });
 
-  it("lanza 400 si COMERCIO no envía address", async () => {
-    const sinAddress = { ...COMERCIO_BASE, address: undefined };
-    await expect(register(sinAddress)).rejects.toMatchObject({ status: 400 });
-  });
-
   it("lanza 409 si el email ya está registrado", async () => {
     await register(CONSUMIDOR_BASE);
     await expect(register(CONSUMIDOR_BASE)).rejects.toMatchObject({ status: 409 });
@@ -98,10 +84,10 @@ describe("login", () => {
     expect(result.user.role).toBe("CONSUMIDOR");
   });
 
-  it("retorna has_address: true para comercio (tiene dirección del registro)", async () => {
+  it("retorna has_address: false para comercio sin dirección", async () => {
     await register(COMERCIO_BASE);
     const result = await login("maria@comercio.com", "miPass123");
-    expect(result.user.has_address).toBe(true);
+    expect(result.user.has_address).toBe(false);
   });
 
   it("lanza 401 si el email no existe", async () => {
