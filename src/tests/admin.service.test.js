@@ -5,6 +5,7 @@ import { createCategory } from "#services/categories.service.js";
 import { createPublication } from "#services/publications.service.js";
 import { createOrder } from "#services/orders.service.js";
 import { getAdminUserProfile } from "#services/users.service.js";
+import { createAddress } from "#services/addresses.service.js";
 import { runExpiredJob, runExpiringJob } from "#jobs/publication-expiry.job.js";
 import { Publication } from "#models/publication.model.js";
 import { listNotifications } from "#services/notification.service.js";
@@ -20,15 +21,16 @@ const COMERCIO_DATA = {
   dni: "30987654",
   business_name: "Verdulería Don Mario",
   cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
+};
+
+const ADDRESS_DATA = {
+  formatted_address: "Av. Corrientes 1234, CABA",
+  street: "Av. Corrientes",
+  number: "1234",
+  city: "CABA",
+  province: "Buenos Aires",
+  lat: -34.6037,
+  lng: -58.3816,
 };
 
 const CONSUMIDOR_DATA = {
@@ -59,6 +61,7 @@ describe("getAdminUserProfile", () => {
 
   it("retorna perfil de comercio con campos de negocio y su dirección", async () => {
     const { id } = await register(COMERCIO_DATA);
+    await createAddress(id, "COMERCIO", ADDRESS_DATA);
     const profile = await getAdminUserProfile(id);
 
     expect(profile.role).toBe("COMERCIO");
