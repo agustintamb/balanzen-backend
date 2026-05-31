@@ -123,7 +123,19 @@ const seed = async () => {
     is_selected: true,
   });
 
-  console.log("✅  3 comercios creados");
+  await User.create({
+    email: "lucia@lacerveceria.com",
+    password,
+    role: "COMERCIO",
+    first_name: "Lucía",
+    last_name: "Paredes",
+    phone: "1155443322",
+    dni: "31444444",
+    business_name: "La Cervecería Artesanal",
+    cuit: "27314444445",
+  });
+
+  console.log("✅  4 comercios creados (1 sin dirección)");
 
   // --- Consumidores ---
   const valentina = await User.create({
@@ -296,7 +308,27 @@ const seed = async () => {
     },
   ]);
 
-  console.log("✅  5 consumidores creados con direcciones");
+  await User.create({
+    email: "camila@mail.com",
+    password,
+    role: "CONSUMIDOR",
+    first_name: "Camila",
+    last_name: "Torres",
+    phone: "1111223344",
+    dni: "42666666",
+  });
+
+  await User.create({
+    email: "martin@mail.com",
+    password,
+    role: "CONSUMIDOR",
+    first_name: "Martín",
+    last_name: "Gimenez",
+    phone: "1122334400",
+    dni: "43777777",
+  });
+
+  console.log("✅  7 consumidores creados (5 con direcciones, 2 sin dirección)");
 
   // --- Publicaciones ---
   // El Hornito — Panadería (7 pubs)
@@ -769,9 +801,11 @@ const seed = async () => {
   console.log(
     "   Comercios:    facundo@elhornito.com | ernesto@verduleria.com | rosi@ladespensa.com  /  Test1234"
   );
+  console.log("   Comercio s/dir: lucia@lacerveceria.com  /  Test1234");
   console.log(
     "   Consumidores: valentina | gonzalo | sofia | diego | natalia @mail.com  /  Test1234"
   );
+  console.log("   Consum. s/dir:  camila | martin @mail.com  /  Test1234");
 };
 
 seed().catch((err) => {
