@@ -9,30 +9,10 @@ import {
   selectAddress,
   searchAddresses,
 } from "#services/addresses.service.js";
-
-const CONSUMIDOR = {
-  role: "CONSUMIDOR",
-  first_name: "Juan",
-  last_name: "Pérez",
-  email: "juan@mail.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1155667788",
-  dni: "35123456",
-};
-
-const COMERCIO = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-};
+import {
+  CONSUMIDOR_DATA as CONSUMIDOR,
+  COMERCIO_DATA_NO_ADDR as COMERCIO,
+} from "#tests/helpers/fixtures.helper.js";
 
 const ADDR_1 = {
   formatted_address: "Av. Santa Fe 2000, CABA",

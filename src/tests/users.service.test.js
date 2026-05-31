@@ -3,40 +3,11 @@ import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
 import { register } from "#services/auth.service.js";
 import { getMyProfile, updateMyProfile } from "#services/users.service.js";
 import { createAddress, selectAddress } from "#services/addresses.service.js";
-
-const CONSUMIDOR = {
-  role: "CONSUMIDOR",
-  first_name: "Juan",
-  last_name: "Pérez",
-  email: "juan@mail.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1155667788",
-  dni: "35123456",
-};
-
-const COMERCIO = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-};
-
-const ADDRESS_DATA = {
-  formatted_address: "Av. Corrientes 1234, CABA",
-  street: "Av. Corrientes",
-  number: "1234",
-  city: "CABA",
-  province: "Buenos Aires",
-  lat: -34.6037,
-  lng: -58.3816,
-};
+import {
+  CONSUMIDOR_DATA as CONSUMIDOR,
+  COMERCIO_DATA_NO_ADDR as COMERCIO,
+  ADDRESS_DATA,
+} from "#tests/helpers/fixtures.helper.js";
 
 beforeAll(connectDB);
 afterAll(disconnectDB);
