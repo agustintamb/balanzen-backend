@@ -27,8 +27,8 @@
     "format": "prettier --write src/",
     "test": "vitest",
     "test:run": "vitest run",
-    "seed": "cross-env NODE_ENV=local node src/assets/seed.js",
-    "db:reset": "cross-env NODE_ENV=local node src/assets/reset-db.js"
+    "seed": "cross-env NODE_ENV=local node src/assets/scripts/seed.js",
+    "db:reset": "cross-env NODE_ENV=local node src/assets/scripts/reset-db.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

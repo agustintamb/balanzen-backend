@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
+import path from "path";
+import { fileURLToPath } from "url";
 import envConfig from "#config/env.config.js";
+import { cloudinary, folderPrefix } from "#config/cloudinary.config.js";
 import { User } from "#models/user.model.js";
 import { Address } from "#models/address.model.js";
 import { Category } from "#models/category.model.js";
@@ -9,7 +12,9 @@ import { Message } from "#models/message.model.js";
 import { Notification } from "#models/notification.model.js";
 import { Favorite } from "#models/favorite.model.js";
 import { hashPassword } from "#services/auth.service.js";
+import { selectAddress } from "#services/addresses.service.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATEGORIES = ["Verduras", "Frutas", "Panificados", "Lácteos", "Carnes", "Bebidas", "Otros"];
 const days = (n) => new Date(Date.now() + n * 86400000);
 
@@ -29,6 +34,58 @@ const seed = async () => {
     Favorite.deleteMany({}),
   ]);
   console.log("🗑️   Colecciones limpiadas");
+
+  // --- Fotos de perfil (Cloudinary) ---
+  const getOrUploadPhoto = async (filename) => {
+    const publicId = `${folderPrefix}/avatars/${filename.replace(/\.[^.]+$/, "")}`;
+    try {
+      const existing = await cloudinary.api.resource(publicId);
+      return existing.secure_url;
+    } catch {
+      const result = await cloudinary.uploader.upload(
+        path.resolve(__dirname, `../images/${filename}`),
+        {
+          public_id: publicId,
+          transformation: [{ quality: "auto", fetch_format: "auto", width: 400, crop: "limit" }],
+        }
+      );
+      return result.secure_url;
+    }
+  };
+
+  const [photoConsumidor, photoComericio] = await Promise.all([
+    getOrUploadPhoto("foto_consumidor.jpg"),
+    getOrUploadPhoto("foto_comercio.jpg"),
+  ]);
+  console.log("✅  Fotos de perfil listas en Cloudinary");
+
+  // --- Limpiar imágenes de usuarios en Cloudinary (conserva los assets seed) ---
+  const seedPublicIds = new Set([
+    `${folderPrefix}/avatars/foto_consumidor`,
+    `${folderPrefix}/avatars/foto_comercio`,
+  ]);
+
+  const toDelete = [];
+  let nextCursor;
+  do {
+    const page = await cloudinary.api.resources({
+      type: "upload",
+      prefix: folderPrefix,
+      max_results: 500,
+      ...(nextCursor && { next_cursor: nextCursor }),
+    });
+    for (const resource of page.resources) {
+      if (!seedPublicIds.has(resource.public_id)) {
+        toDelete.push(resource.public_id);
+      }
+    }
+    nextCursor = page.next_cursor;
+  } while (nextCursor);
+
+  for (let i = 0; i < toDelete.length; i += 100) {
+    await cloudinary.api.delete_resources(toDelete.slice(i, i + 100));
+  }
+  console.log(`✅  Cloudinary limpiado (${toDelete.length} imágenes eliminadas)`);
 
   // --- Admin ---
   const adminPassword = await hashPassword("Admin123");
@@ -64,8 +121,9 @@ const seed = async () => {
     dni: "28111111",
     business_name: "Panadería El Hornito",
     cuit: "20281111112",
+    photo_url: photoComericio,
   });
-  await Address.create({
+  const hornitAddr1 = await Address.create({
     user_id: hornito._id,
     formatted_address: "Av. Corrientes 2468, Balvanera, CABA",
     street: "Av. Corrientes",
@@ -74,8 +132,28 @@ const seed = async () => {
     province: "Buenos Aires",
     lat: -34.6068,
     lng: -58.4033,
-    is_selected: true,
   });
+  await Address.create({
+    user_id: hornito._id,
+    formatted_address: "Av. Callao 900, Balvanera, CABA",
+    street: "Av. Callao",
+    number: "900",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6052,
+    lng: -58.3924,
+  });
+  await Address.create({
+    user_id: hornito._id,
+    formatted_address: "Av. Córdoba 1500, Buenos Aires, CABA",
+    street: "Av. Córdoba",
+    number: "1500",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5997,
+    lng: -58.3912,
+  });
+  await selectAddress(hornito._id, hornitAddr1._id);
 
   const ernesto = await User.create({
     email: "ernesto@verduleria.com",
@@ -87,8 +165,9 @@ const seed = async () => {
     dni: "26222222",
     business_name: "Frutería y Verdulería La Esquina de Ernesto",
     cuit: "20262222223",
+    photo_url: photoComericio,
   });
-  await Address.create({
+  const ernestoAddr1 = await Address.create({
     user_id: ernesto._id,
     formatted_address: "Balcarce 460, San Telmo, CABA",
     street: "Balcarce",
@@ -97,8 +176,28 @@ const seed = async () => {
     province: "Buenos Aires",
     lat: -34.6198,
     lng: -58.3728,
-    is_selected: true,
   });
+  await Address.create({
+    user_id: ernesto._id,
+    formatted_address: "Chile 800, San Telmo, CABA",
+    street: "Chile",
+    number: "800",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6227,
+    lng: -58.3698,
+  });
+  await Address.create({
+    user_id: ernesto._id,
+    formatted_address: "Av. Independencia 1200, San Telmo, CABA",
+    street: "Av. Independencia",
+    number: "1200",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6247,
+    lng: -58.3842,
+  });
+  await selectAddress(ernesto._id, ernestoAddr1._id);
 
   const rosi = await User.create({
     email: "rosi@ladespensa.com",
@@ -110,8 +209,9 @@ const seed = async () => {
     dni: "29333333",
     business_name: "Almacén La Despensa de Rosi",
     cuit: "27293333334",
+    photo_url: photoComericio,
   });
-  await Address.create({
+  const rosiAddr1 = await Address.create({
     user_id: rosi._id,
     formatted_address: "Av. Rivadavia 5600, Caballito, CABA",
     street: "Av. Rivadavia",
@@ -120,8 +220,28 @@ const seed = async () => {
     province: "Buenos Aires",
     lat: -34.6178,
     lng: -58.4362,
-    is_selected: true,
   });
+  await Address.create({
+    user_id: rosi._id,
+    formatted_address: "Av. Acoyte 300, Caballito, CABA",
+    street: "Av. Acoyte",
+    number: "300",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6158,
+    lng: -58.4381,
+  });
+  await Address.create({
+    user_id: rosi._id,
+    formatted_address: "Rojas 500, Caballito, CABA",
+    street: "Rojas",
+    number: "500",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6201,
+    lng: -58.4472,
+  });
+  await selectAddress(rosi._id, rosiAddr1._id);
 
   await User.create({
     email: "lucia@lacerveceria.com",
@@ -133,9 +253,10 @@ const seed = async () => {
     dni: "31444444",
     business_name: "La Cervecería Artesanal",
     cuit: "27314444445",
+    photo_url: photoComericio,
   });
 
-  console.log("✅  4 comercios creados (1 sin dirección)");
+  console.log("✅  4 comercios creados (3 con dirección, 1 sin dirección)");
 
   // --- Consumidores ---
   const valentina = await User.create({
@@ -146,31 +267,49 @@ const seed = async () => {
     last_name: "Suárez",
     phone: "1155667788",
     dni: "37111111",
+    photo_url: photoConsumidor,
   });
-  await Address.create([
-    {
-      user_id: valentina._id,
-      formatted_address: "Thames 1500, Palermo, CABA",
-      street: "Thames",
-      number: "1500",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.5886,
-      lng: -58.4271,
-      is_selected: true,
-    },
-    {
-      user_id: valentina._id,
-      formatted_address: "Av. Corrientes 4200, Villa Crespo, CABA",
-      street: "Av. Corrientes",
-      number: "4200",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.5988,
-      lng: -58.4398,
-      is_selected: false,
-    },
-  ]);
+  const valAddr1 = await Address.create({
+    user_id: valentina._id,
+    formatted_address: "Thames 1500, Palermo, CABA",
+    street: "Thames",
+    number: "1500",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5886,
+    lng: -58.4271,
+  });
+  await Address.create({
+    user_id: valentina._id,
+    formatted_address: "Av. Corrientes 4200, Villa Crespo, CABA",
+    street: "Av. Corrientes",
+    number: "4200",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5988,
+    lng: -58.4398,
+  });
+  await Address.create({
+    user_id: valentina._id,
+    formatted_address: "Guatemala 4700, Palermo, CABA",
+    street: "Guatemala",
+    number: "4700",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5832,
+    lng: -58.4239,
+  });
+  await Address.create({
+    user_id: valentina._id,
+    formatted_address: "Malabia 1800, Palermo, CABA",
+    street: "Malabia",
+    number: "1800",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5863,
+    lng: -58.4306,
+  });
+  await selectAddress(valentina._id, valAddr1._id);
 
   const gonzalo = await User.create({
     email: "gonzalo@mail.com",
@@ -180,31 +319,49 @@ const seed = async () => {
     last_name: "López",
     phone: "1166778899",
     dni: "38222222",
+    photo_url: photoConsumidor,
   });
-  await Address.create([
-    {
-      user_id: gonzalo._id,
-      formatted_address: "Cabildo 2000, Belgrano, CABA",
-      street: "Cabildo",
-      number: "2000",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.5617,
-      lng: -58.4583,
-      is_selected: true,
-    },
-    {
-      user_id: gonzalo._id,
-      formatted_address: "Av. del Libertador 6000, Núñez, CABA",
-      street: "Av. del Libertador",
-      number: "6000",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.5463,
-      lng: -58.4641,
-      is_selected: false,
-    },
-  ]);
+  const gonzAddr1 = await Address.create({
+    user_id: gonzalo._id,
+    formatted_address: "Cabildo 2000, Belgrano, CABA",
+    street: "Cabildo",
+    number: "2000",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5617,
+    lng: -58.4583,
+  });
+  await Address.create({
+    user_id: gonzalo._id,
+    formatted_address: "Av. del Libertador 6000, Núñez, CABA",
+    street: "Av. del Libertador",
+    number: "6000",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5463,
+    lng: -58.4641,
+  });
+  await Address.create({
+    user_id: gonzalo._id,
+    formatted_address: "Juramento 2400, Belgrano, CABA",
+    street: "Juramento",
+    number: "2400",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5591,
+    lng: -58.4612,
+  });
+  await Address.create({
+    user_id: gonzalo._id,
+    formatted_address: "Virrey del Pino 2800, Belgrano, CABA",
+    street: "Virrey del Pino",
+    number: "2800",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5547,
+    lng: -58.4573,
+  });
+  await selectAddress(gonzalo._id, gonzAddr1._id);
 
   const sofia = await User.create({
     email: "sofia@mail.com",
@@ -214,31 +371,39 @@ const seed = async () => {
     last_name: "Romero",
     phone: "1177889900",
     dni: "39333333",
+    photo_url: photoConsumidor,
   });
-  await Address.create([
-    {
-      user_id: sofia._id,
-      formatted_address: "Defensa 800, San Telmo, CABA",
-      street: "Defensa",
-      number: "800",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.6224,
-      lng: -58.3712,
-      is_selected: true,
-    },
-    {
-      user_id: sofia._id,
-      formatted_address: "Av. Regimiento Patricios 1200, Barracas, CABA",
-      street: "Av. Regimiento Patricios",
-      number: "1200",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.6391,
-      lng: -58.3827,
-      is_selected: false,
-    },
-  ]);
+  const sofiaAddr1 = await Address.create({
+    user_id: sofia._id,
+    formatted_address: "Defensa 800, San Telmo, CABA",
+    street: "Defensa",
+    number: "800",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6224,
+    lng: -58.3712,
+  });
+  await Address.create({
+    user_id: sofia._id,
+    formatted_address: "Av. Regimiento Patricios 1200, Barracas, CABA",
+    street: "Av. Regimiento Patricios",
+    number: "1200",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6391,
+    lng: -58.3827,
+  });
+  await Address.create({
+    user_id: sofia._id,
+    formatted_address: "Humberto I 1000, San Telmo, CABA",
+    street: "Humberto I",
+    number: "1000",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6261,
+    lng: -58.3692,
+  });
+  await selectAddress(sofia._id, sofiaAddr1._id);
 
   const diego = await User.create({
     email: "diego@mail.com",
@@ -248,31 +413,39 @@ const seed = async () => {
     last_name: "Hernández",
     phone: "1188990011",
     dni: "40444444",
+    photo_url: photoConsumidor,
   });
-  await Address.create([
-    {
-      user_id: diego._id,
-      formatted_address: "Av. Rivadavia 7000, Flores, CABA",
-      street: "Av. Rivadavia",
-      number: "7000",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.6295,
-      lng: -58.4613,
-      is_selected: true,
-    },
-    {
-      user_id: diego._id,
-      formatted_address: "Av. Acoyte 100, Caballito, CABA",
-      street: "Av. Acoyte",
-      number: "100",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.6158,
-      lng: -58.4381,
-      is_selected: false,
-    },
-  ]);
+  const diegoAddr1 = await Address.create({
+    user_id: diego._id,
+    formatted_address: "Av. Rivadavia 7000, Flores, CABA",
+    street: "Av. Rivadavia",
+    number: "7000",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6295,
+    lng: -58.4613,
+  });
+  await Address.create({
+    user_id: diego._id,
+    formatted_address: "Av. Acoyte 100, Caballito, CABA",
+    street: "Av. Acoyte",
+    number: "100",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6158,
+    lng: -58.4381,
+  });
+  await Address.create({
+    user_id: diego._id,
+    formatted_address: "Membrillar 2000, Flores, CABA",
+    street: "Membrillar",
+    number: "2000",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.6318,
+    lng: -58.4727,
+  });
+  await selectAddress(diego._id, diegoAddr1._id);
 
   const natalia = await User.create({
     email: "natalia@mail.com",
@@ -282,31 +455,39 @@ const seed = async () => {
     last_name: "Ferreyra",
     phone: "1199001122",
     dni: "41555555",
+    photo_url: photoConsumidor,
   });
-  await Address.create([
-    {
-      user_id: natalia._id,
-      formatted_address: "Av. Alvear 1800, Recoleta, CABA",
-      street: "Av. Alvear",
-      number: "1800",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.5858,
-      lng: -58.3928,
-      is_selected: true,
-    },
-    {
-      user_id: natalia._id,
-      formatted_address: "Libertad 500, Retiro, CABA",
-      street: "Libertad",
-      number: "500",
-      city: "CABA",
-      province: "Buenos Aires",
-      lat: -34.5889,
-      lng: -58.3742,
-      is_selected: false,
-    },
-  ]);
+  const nataliaAddr1 = await Address.create({
+    user_id: natalia._id,
+    formatted_address: "Av. Alvear 1800, Recoleta, CABA",
+    street: "Av. Alvear",
+    number: "1800",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5858,
+    lng: -58.3928,
+  });
+  await Address.create({
+    user_id: natalia._id,
+    formatted_address: "Libertad 500, Retiro, CABA",
+    street: "Libertad",
+    number: "500",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5889,
+    lng: -58.3742,
+  });
+  await Address.create({
+    user_id: natalia._id,
+    formatted_address: "Juncal 1600, Recoleta, CABA",
+    street: "Juncal",
+    number: "1600",
+    city: "CABA",
+    province: "Buenos Aires",
+    lat: -34.5872,
+    lng: -58.3851,
+  });
+  await selectAddress(natalia._id, nataliaAddr1._id);
 
   await User.create({
     email: "camila@mail.com",
@@ -316,6 +497,7 @@ const seed = async () => {
     last_name: "Torres",
     phone: "1111223344",
     dni: "42666666",
+    photo_url: photoConsumidor,
   });
 
   await User.create({
@@ -326,9 +508,10 @@ const seed = async () => {
     last_name: "Gimenez",
     phone: "1122334400",
     dni: "43777777",
+    photo_url: photoConsumidor,
   });
 
-  console.log("✅  7 consumidores creados (5 con direcciones, 2 sin dirección)");
+  console.log("✅  7 consumidores creados (5 con dirección, 2 sin dirección)");
 
   // --- Publicaciones ---
   // El Hornito — Panadería (7 pubs)
@@ -796,16 +979,29 @@ const seed = async () => {
   await mongoose.disconnect();
   console.log("🔌  Desconectado");
   console.log("");
-  console.log("🎉  Seed completo!");
-  console.log("   Admin:        admin@balanzen.com  /  Admin123");
-  console.log(
-    "   Comercios:    facundo@elhornito.com | ernesto@verduleria.com | rosi@ladespensa.com  /  Test1234"
-  );
-  console.log("   Comercio s/dir: lucia@lacerveceria.com  /  Test1234");
-  console.log(
-    "   Consumidores: valentina | gonzalo | sofia | diego | natalia @mail.com  /  Test1234"
-  );
-  console.log("   Consum. s/dir:  camila | martin @mail.com  /  Test1234");
+  console.log("🎉  Seed completo! — contraseña: Test1234 (todos), Admin123 (admin)");
+  console.log("");
+  console.log("   Admin:");
+  console.log("     admin@balanzen.com");
+  console.log("");
+  console.log("   Comercios con dirección:");
+  console.log("     facundo@elhornito.com");
+  console.log("     ernesto@verduleria.com");
+  console.log("     rosi@ladespensa.com");
+  console.log("");
+  console.log("   Comercio sin dirección:");
+  console.log("     lucia@lacerveceria.com");
+  console.log("");
+  console.log("   Consumidores con dirección:");
+  console.log("     valentina@mail.com");
+  console.log("     gonzalo@mail.com");
+  console.log("     sofia@mail.com");
+  console.log("     diego@mail.com");
+  console.log("     natalia@mail.com");
+  console.log("");
+  console.log("   Consumidores sin dirección:");
+  console.log("     camila@mail.com");
+  console.log("     martin@mail.com");
 };
 
 seed().catch((err) => {
