@@ -1,52 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
-import { register } from "#services/auth.service.js";
 import { createCategory } from "#services/categories.service.js";
 import { createPublication } from "#services/publications.service.js";
 import { createOrder, deliverOrder, cancelOrder } from "#services/orders.service.js";
 import { getCommerceSummary } from "#services/metrics.service.js";
-
-const COMERCIO_DATA = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
-};
-
-const CONSUMIDOR_DATA = {
-  role: "CONSUMIDOR",
-  first_name: "Juan",
-  last_name: "Pérez",
-  email: "juan@mail.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1155667788",
-  dni: "35123456",
-};
-
-let commerceId;
-let consumerId;
+import { setupTwoUsers } from "#tests/helpers/fixtures.helper.js";
 
 beforeAll(connectDB);
 afterAll(disconnectDB);
 afterEach(clearDB);
 
-const createPub = async (catId) =>
+const createPub = async (commerceId, catId) =>
   createPublication(commerceId, {
     title: "Producto",
     description: "Descripción",
@@ -56,18 +20,9 @@ const createPub = async (catId) =>
     category_id: catId,
   });
 
-const setup = async () => {
-  const [commerce, consumer] = await Promise.all([
-    register(COMERCIO_DATA),
-    register(CONSUMIDOR_DATA),
-  ]);
-  commerceId = commerce.id;
-  consumerId = consumer.id;
-};
-
 describe("getCommerceSummary", () => {
   it("retorna todo en 0 si el comercio no tiene publicaciones ni pedidos", async () => {
-    await setup();
+    const { commerceId } = await setupTwoUsers();
     const result = await getCommerceSummary(commerceId);
 
     expect(result.total_publications).toBe(0);
@@ -79,11 +34,14 @@ describe("getCommerceSummary", () => {
   });
 
   it("calcula métricas correctamente con publicaciones y pedidos", async () => {
-    await setup();
+    const { commerceId, consumerId } = await setupTwoUsers();
     const cat = await createCategory({ name: "Verduras" });
 
-    await createPub(cat.id);
-    const [pub1, pub2] = await Promise.all([createPub(cat.id), createPub(cat.id)]);
+    await createPub(commerceId, cat.id);
+    const [pub1, pub2] = await Promise.all([
+      createPub(commerceId, cat.id),
+      createPub(commerceId, cat.id),
+    ]);
 
     const [order1, order2] = await Promise.all([
       createOrder(consumerId, pub1.id),
