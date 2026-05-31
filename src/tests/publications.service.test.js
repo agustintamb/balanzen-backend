@@ -10,28 +10,7 @@ import {
   deletePublication,
   getMyPublications,
 } from "#services/publications.service.js";
-
-const COMERCIO_DATA = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
-};
+import { COMERCIO_DATA } from "#tests/helpers/fixtures.helper.js";
 
 const PUB_DATA = (categoryId) => ({
   title: "Mix de verduras del día",

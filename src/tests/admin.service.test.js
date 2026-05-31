@@ -9,40 +9,11 @@ import { createAddress } from "#services/addresses.service.js";
 import { runExpiredJob, runExpiringJob } from "#jobs/publication-expiry.job.js";
 import { Publication } from "#models/publication.model.js";
 import { listNotifications } from "#services/notification.service.js";
-
-const COMERCIO_DATA = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-};
-
-const ADDRESS_DATA = {
-  formatted_address: "Av. Corrientes 1234, CABA",
-  street: "Av. Corrientes",
-  number: "1234",
-  city: "CABA",
-  province: "Buenos Aires",
-  lat: -34.6037,
-  lng: -58.3816,
-};
-
-const CONSUMIDOR_DATA = {
-  role: "CONSUMIDOR",
-  first_name: "Juan",
-  last_name: "Pérez",
-  email: "juan@mail.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1155667788",
-  dni: "35123456",
-};
+import {
+  CONSUMIDOR_DATA,
+  COMERCIO_DATA_NO_ADDR as COMERCIO_DATA,
+  ADDRESS_DATA,
+} from "#tests/helpers/fixtures.helper.js";
 
 beforeAll(connectDB);
 afterAll(disconnectDB);

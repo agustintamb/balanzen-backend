@@ -2,30 +2,10 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
 import { register, login, refresh, logout } from "#services/auth.service.js";
 import { User } from "#models/user.model.js";
-
-const CONSUMIDOR_BASE = {
-  role: "CONSUMIDOR",
-  first_name: "Juan",
-  last_name: "Pérez",
-  email: "juan@mail.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1155667788",
-  dni: "35123456",
-};
-
-const COMERCIO_BASE = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-};
+import {
+  CONSUMIDOR_DATA as CONSUMIDOR_BASE,
+  COMERCIO_DATA_NO_ADDR as COMERCIO_BASE,
+} from "#tests/helpers/fixtures.helper.js";
 
 beforeAll(connectDB);
 afterAll(disconnectDB);
