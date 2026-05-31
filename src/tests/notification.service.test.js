@@ -1,75 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
-import { register } from "#services/auth.service.js";
-import { createCategory } from "#services/categories.service.js";
-import { createPublication } from "#services/publications.service.js";
 import { createOrder, cancelOrder, deliverOrder } from "#services/orders.service.js";
 import { sendMessage } from "#services/chat.service.js";
 import { createNotification, listNotifications } from "#services/notification.service.js";
-
-const COMERCIO_DATA = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
-};
-
-const CONSUMIDOR_DATA = {
-  role: "CONSUMIDOR",
-  first_name: "Juan",
-  last_name: "Pérez",
-  email: "juan@mail.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1155667788",
-  dni: "35123456",
-};
-
-let commerceId;
-let consumerId;
-let pubId;
+import { setupWithPublication } from "#tests/helpers/fixtures.helper.js";
 
 beforeAll(connectDB);
 afterAll(disconnectDB);
 afterEach(clearDB);
 
-const setup = async () => {
-  const [commerce, consumer] = await Promise.all([
-    register(COMERCIO_DATA),
-    register(CONSUMIDOR_DATA),
-  ]);
-  commerceId = commerce.id;
-  consumerId = consumer.id;
-  const cat = await createCategory({ name: "Verduras" });
-  const pub = await createPublication(commerceId, {
-    title: "Mix de verduras",
-    description: "Tomate y lechuga",
-    original_price: 2000,
-    final_price: 1000,
-    expiry_date: new Date(Date.now() + 86400000),
-    category_id: cat.id,
-  });
-  pubId = pub.id;
-};
-
 describe("createNotification", () => {
   it("crea una notificación correctamente", async () => {
-    await setup();
+    const { commerceId } = await setupWithPublication();
     const notif = await createNotification({
       userId: commerceId,
       type: "NEW_RESERVATION",
@@ -87,7 +29,7 @@ describe("createNotification", () => {
 
 describe("listNotifications", () => {
   it("retorna notificaciones del usuario con unread_count", async () => {
-    await setup();
+    const { commerceId } = await setupWithPublication();
     await createNotification({
       userId: commerceId,
       type: "NEW_RESERVATION",
@@ -102,7 +44,7 @@ describe("listNotifications", () => {
   });
 
   it("filtra por read=false", async () => {
-    await setup();
+    const { consumerId } = await setupWithPublication();
     await createNotification({
       userId: consumerId,
       type: "ORDER_DELIVERED",
@@ -118,7 +60,7 @@ describe("listNotifications", () => {
   });
 
   it("retorna lista vacía si el usuario no tiene notificaciones", async () => {
-    await setup();
+    const { consumerId } = await setupWithPublication();
     const result = await listNotifications(consumerId, {});
     expect(result.notifications).toHaveLength(0);
     expect(result.unread_count).toBe(0);
@@ -127,7 +69,7 @@ describe("listNotifications", () => {
 
 describe("triggers automáticos desde orders.service", () => {
   it("createOrder genera NEW_RESERVATION para el comercio", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     await createOrder(consumerId, pubId);
 
     const result = await listNotifications(commerceId, {});
@@ -136,7 +78,7 @@ describe("triggers automáticos desde orders.service", () => {
   });
 
   it("cancelOrder por consumidor genera RESERVATION_CANCELLED_BY_CONSUMER para el comercio", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await cancelOrder(order.id, consumerId);
 
@@ -146,7 +88,7 @@ describe("triggers automáticos desde orders.service", () => {
   });
 
   it("cancelOrder por comercio genera RESERVATION_CANCELLED_BY_COMMERCE para el consumidor", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await cancelOrder(order.id, commerceId);
 
@@ -156,7 +98,7 @@ describe("triggers automáticos desde orders.service", () => {
   });
 
   it("deliverOrder genera ORDER_DELIVERED para el consumidor", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await deliverOrder(order.id, commerceId);
 
@@ -168,7 +110,7 @@ describe("triggers automáticos desde orders.service", () => {
 
 describe("triggers automáticos desde chat.service", () => {
   it("sendMessage genera NEW_MESSAGE para la contraparte", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await sendMessage(order.id, consumerId, "Hola!");
 

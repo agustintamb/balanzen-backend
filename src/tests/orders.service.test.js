@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
 import { register } from "#services/auth.service.js";
-import { createCategory } from "#services/categories.service.js";
-import { createPublication } from "#services/publications.service.js";
 import { Publication } from "#models/publication.model.js";
 import {
   createOrder,
@@ -11,72 +9,15 @@ import {
   cancelOrder,
   deliverOrder,
 } from "#services/orders.service.js";
-
-const COMERCIO_DATA = {
-  role: "COMERCIO",
-  first_name: "María",
-  last_name: "López",
-  email: "maria@comercio.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1144556677",
-  dni: "30987654",
-  business_name: "Verdulería Don Mario",
-  cuit: "20309876543",
-  address: {
-    formatted_address: "Av. Corrientes 1234, CABA",
-    street: "Av. Corrientes",
-    number: "1234",
-    city: "CABA",
-    province: "Buenos Aires",
-    lat: -34.6037,
-    lng: -58.3816,
-  },
-};
-
-const CONSUMIDOR_DATA = {
-  role: "CONSUMIDOR",
-  first_name: "Juan",
-  last_name: "Pérez",
-  email: "juan@mail.com",
-  password: "miPass123",
-  confirm_password: "miPass123",
-  phone: "1155667788",
-  dni: "35123456",
-};
-
-let commerceId;
-let consumerId;
-let categoryId;
-let pubId;
+import { CONSUMIDOR_DATA, setupWithPublication } from "#tests/helpers/fixtures.helper.js";
 
 beforeAll(connectDB);
 afterAll(disconnectDB);
 afterEach(clearDB);
 
-const setup = async () => {
-  const [commerce, consumer] = await Promise.all([
-    register(COMERCIO_DATA),
-    register(CONSUMIDOR_DATA),
-  ]);
-  commerceId = commerce.id;
-  consumerId = consumer.id;
-  const cat = await createCategory({ name: "Verduras" });
-  categoryId = cat.id;
-  const pub = await createPublication(commerceId, {
-    title: "Mix de verduras",
-    description: "Tomate y lechuga",
-    original_price: 2000,
-    final_price: 1000,
-    expiry_date: new Date(Date.now() + 86400000),
-    category_id: categoryId,
-  });
-  pubId = pub.id;
-};
-
 describe("createOrder", () => {
   it("crea una reserva y cambia la publicación a RESERVED", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
 
     expect(order.id).toBeDefined();
@@ -90,18 +31,18 @@ describe("createOrder", () => {
   });
 
   it("lanza 404 si la publicación no existe", async () => {
-    await setup();
+    const { consumerId } = await setupWithPublication();
     await expect(createOrder(consumerId, "id-inexistente")).rejects.toMatchObject({ status: 404 });
   });
 
   it("lanza 409 si la publicación no está ACTIVE", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     await createOrder(consumerId, pubId);
     await expect(createOrder(consumerId, pubId)).rejects.toMatchObject({ status: 409 });
   });
 
   it("lanza 409 si ya existe una reserva activa", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     await createOrder(consumerId, pubId);
     const consumer2 = await register({
       ...CONSUMIDOR_DATA,
@@ -114,7 +55,7 @@ describe("createOrder", () => {
 
 describe("listOrders", () => {
   it("consumidor ve sus propias reservas", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     await createOrder(consumerId, pubId);
     const result = await listOrders(consumerId, "CONSUMIDOR", {});
 
@@ -123,7 +64,7 @@ describe("listOrders", () => {
   });
 
   it("comercio ve las reservas recibidas", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     await createOrder(consumerId, pubId);
     const result = await listOrders(commerceId, "COMERCIO", {});
 
@@ -132,7 +73,7 @@ describe("listOrders", () => {
   });
 
   it("filtra por status", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await cancelOrder(order.id, consumerId);
 
@@ -146,7 +87,7 @@ describe("listOrders", () => {
 
 describe("getOrderById", () => {
   it("retorna el detalle del pedido para el consumidor", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     const result = await getOrderById(order.id, consumerId);
 
@@ -155,26 +96,26 @@ describe("getOrderById", () => {
   });
 
   it("retorna el detalle del pedido para el comercio", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     const result = await getOrderById(order.id, commerceId);
     expect(result.id).toBe(order.id);
   });
 
   it("lanza 403 si el usuario no es parte del pedido", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await expect(getOrderById(order.id, "otro-id")).rejects.toMatchObject({ status: 403 });
   });
 
   it("lanza 404 si el pedido no existe", async () => {
-    await expect(getOrderById("id-inexistente", consumerId)).rejects.toMatchObject({ status: 404 });
+    await expect(getOrderById("id-inexistente", "any-id")).rejects.toMatchObject({ status: 404 });
   });
 });
 
 describe("cancelOrder", () => {
   it("cancela el pedido y devuelve la publicación a ACTIVE", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await cancelOrder(order.id, consumerId);
 
@@ -186,7 +127,7 @@ describe("cancelOrder", () => {
   });
 
   it("el comercio también puede cancelar", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await cancelOrder(order.id, commerceId);
 
@@ -195,14 +136,14 @@ describe("cancelOrder", () => {
   });
 
   it("lanza 409 si el pedido no está RESERVED", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await cancelOrder(order.id, consumerId);
     await expect(cancelOrder(order.id, consumerId)).rejects.toMatchObject({ status: 409 });
   });
 
   it("lanza 403 si el usuario no es parte del pedido", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await expect(cancelOrder(order.id, "otro-id")).rejects.toMatchObject({ status: 403 });
   });
@@ -210,7 +151,7 @@ describe("cancelOrder", () => {
 
 describe("deliverOrder", () => {
   it("marca el pedido como entregado y la publicación pasa a DELIVERED", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await deliverOrder(order.id, commerceId);
 
@@ -222,13 +163,13 @@ describe("deliverOrder", () => {
   });
 
   it("lanza 403 si no es el comercio owner", async () => {
-    await setup();
+    const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await expect(deliverOrder(order.id, "otro-id")).rejects.toMatchObject({ status: 403 });
   });
 
   it("lanza 409 si el pedido no está RESERVED", async () => {
-    await setup();
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await cancelOrder(order.id, consumerId);
     await expect(deliverOrder(order.id, commerceId)).rejects.toMatchObject({ status: 409 });
