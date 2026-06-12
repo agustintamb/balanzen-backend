@@ -30,7 +30,9 @@ const reset = async () => {
   console.log("🔌  Desconectado");
 };
 
-reset().catch((err) => {
+try {
+  await reset();
+} catch (err) {
   console.error("❌ Error al limpiar la base de datos:", err.message);
   process.exit(1);
-});
+}

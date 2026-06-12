@@ -125,8 +125,8 @@ const listPublications = async (query) => {
   const addressMap = Object.fromEntries(addresses.map((a) => [a.user_id, a]));
 
   // Armar respuesta con distance_km
-  const userLat = lat !== undefined ? Number(lat) : null;
-  const userLng = lng !== undefined ? Number(lng) : null;
+  const userLat = lat === undefined ? null : Number(lat);
+  const userLng = lng === undefined ? null : Number(lng);
 
   let results = publications.map((pub) => {
     const commerce = commerceMap[pub.commerce_id];
