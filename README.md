@@ -50,7 +50,7 @@ La API queda disponible en `http://localhost:3001`.
 
 ## Seed de datos de prueba
 
-Crea el admin, categorías y usuarios de demo (comercios + consumidores con publicaciones, órdenes, mensajes y notificaciones):
+Limpia la base de datos y carga un dataset completo: 20 usuarios, 52 publicaciones, 20 órdenes, 72 mensajes, 52 notificaciones y 39 favoritos.
 
 ```bash
 npm run seed
@@ -58,17 +58,28 @@ npm run seed
 
 **Credenciales del seed:**
 
-| Usuario               | Email                 | Contraseña |
-| --------------------- | --------------------- | ---------- |
-| Admin                 | admin@balanzen.com    | Admin123   |
-| Verdulería Don Mario  | mario@comercio.com    | Test1234   |
-| Panadería La Estrella | estrella@comercio.com | Test1234   |
-| Almacén El Rincón     | rincon@comercio.com   | Test1234   |
-| Juan Pérez            | juan@mail.com         | Test1234   |
-| Ana García            | ana@mail.com          | Test1234   |
-| Luis Martínez         | luis@mail.com         | Test1234   |
-| María López           | maria@mail.com        | Test1234   |
-| Pedro Fernández       | pedro@mail.com        | Test1234   |
+| Nombre / Comercio                         | Email                    | Contraseña | Rol        | Dirección    |
+| ----------------------------------------- | ------------------------ | ---------- | ---------- | ------------ |
+| Admin BalanZen                            | admin@balanzen.com       | Admin123   | ADMIN      | —            |
+| Panadería El Hornito                      | facundo@elhornito.com    | Test1234   | COMERCIO   | 3 dirs       |
+| Frutería y Verdulería La Esquina de Ernesto | ernesto@verduleria.com | Test1234   | COMERCIO   | 3 dirs       |
+| Almacén La Despensa de Rosi               | rosi@ladespensa.com      | Test1234   | COMERCIO   | 3 dirs       |
+| Carnicería San José                       | pedro@carniceria.com     | Test1234   | COMERCIO   | 2 dirs       |
+| Mercado Todo                              | marta@mercadotodo.com    | Test1234   | COMERCIO   | 2 dirs       |
+| Pizzería Rey                              | carlos@pizzeriarey.com   | Test1234   | COMERCIO   | 2 dirs       |
+| La Cervecería Artesanal                   | lucia@lacerveceria.com   | Test1234   | COMERCIO   | sin dirección |
+| Valentina Suárez                          | valentina@mail.com       | Test1234   | CONSUMIDOR | 4 dirs       |
+| Gonzalo López                             | gonzalo@mail.com         | Test1234   | CONSUMIDOR | 4 dirs       |
+| Sofía Romero                              | sofia@mail.com           | Test1234   | CONSUMIDOR | 3 dirs       |
+| Diego Hernández                           | diego@mail.com           | Test1234   | CONSUMIDOR | 3 dirs       |
+| Natalia Ferreyra                          | natalia@mail.com         | Test1234   | CONSUMIDOR | 3 dirs       |
+| Lucas Medina                              | lucas@mail.com           | Test1234   | CONSUMIDOR | 2 dirs       |
+| Ana Gómez                                 | ana@mail.com             | Test1234   | CONSUMIDOR | 2 dirs       |
+| Julián Castro                             | julian@mail.com          | Test1234   | CONSUMIDOR | 2 dirs       |
+| Paula Vargas                              | paula@mail.com           | Test1234   | CONSUMIDOR | 2 dirs       |
+| Roberto Silva                             | roberto@mail.com         | Test1234   | CONSUMIDOR | 2 dirs       |
+| Camila Torres                             | camila@mail.com          | Test1234   | CONSUMIDOR | sin dirección |
+| Martín Gimenez                            | martin@mail.com          | Test1234   | CONSUMIDOR | sin dirección |
 
 ## Tests
 
