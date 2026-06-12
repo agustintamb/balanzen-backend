@@ -25,7 +25,7 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
-  // Usamos la colección directa para limpiar todo, incluyendo borrados lógicamente
+  // Limpia la colección entera incluyendo documentos con soft delete aplicado
   await TestModel.collection.deleteMany({});
 });
 
