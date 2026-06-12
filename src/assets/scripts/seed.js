@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import path from "path";
-import { fileURLToPath } from "url";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import envConfig from "#config/env.config.js";
 import { cloudinary, folderPrefix } from "#config/cloudinary.config.js";
 import { User } from "#models/user.model.js";
@@ -855,7 +855,7 @@ const seed = async () => {
   });
   console.log("✅  8 publicaciones Carnicería San José");
 
-  // --- Mercado Todo — Marta (7) ---
+  // --- Marta — 7 publicaciones ---
   const pubFideos = await Publication.create({
     commerce_id: marta._id,
     category_id: catMap["Otros"],
@@ -1805,7 +1805,9 @@ const seed = async () => {
   console.log("     martin@mail.com");
 };
 
-seed().catch((err) => {
+try {
+  await seed();
+} catch (err) {
   console.error("❌ Error en seed:", err.message);
   process.exit(1);
-});
+}
