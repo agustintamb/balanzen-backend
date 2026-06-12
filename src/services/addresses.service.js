@@ -14,8 +14,8 @@ const mapNominatimResult = (result) => ({
     result.address?.village ||
     "",
   province: result.address?.state || "",
-  lat: parseFloat(result.lat),
-  lng: parseFloat(result.lon),
+  lat: Number.parseFloat(result.lat),
+  lng: Number.parseFloat(result.lon),
 });
 
 const searchAddresses = async (query) => {
