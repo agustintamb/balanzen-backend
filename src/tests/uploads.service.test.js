@@ -42,4 +42,15 @@ describe("deleteImage", () => {
 
     expect(cloudinary.uploader.destroy).toHaveBeenCalledWith("balanzen/local/image/sample");
   });
+
+  it("lanza 500 si Cloudinary no pudo eliminar la imagen", async () => {
+    const { cloudinary } = await import("#config/cloudinary.config.js");
+    cloudinary.uploader.destroy = vi.fn().mockResolvedValue({ result: "error" });
+
+    await expect(
+      deleteImage(
+        "https://res.cloudinary.com/demo/image/upload/v123/balanzen/local/image/sample.jpg"
+      )
+    ).rejects.toMatchObject({ status: 500 });
+  });
 });
