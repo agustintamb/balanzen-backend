@@ -112,6 +112,7 @@ const listPublications = async (query) => {
   if (category_id) filter.category_id = category_id;
   if (max_price !== undefined) filter.final_price = { $lte: Number(max_price) };
   if (donation === "true" || donation === true) filter.is_donation = true;
+  else if (donation === "false" || donation === false) filter.is_donation = false;
   if (search)
     filter.$or = [{ title: new RegExp(search, "i") }, { description: new RegExp(search, "i") }];
 
