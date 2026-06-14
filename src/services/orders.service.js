@@ -3,6 +3,8 @@ import { Publication } from "#models/publication.model.js";
 import { User } from "#models/user.model.js";
 import { Address } from "#models/address.model.js";
 import { createNotification } from "#services/notification.service.js";
+import { buildDateFilter } from "#utils/date-filter.helper.js";
+import { getUnreadCount } from "#utils/unread.helper.js";
 
 const buildPublicationSnippet = (pub) => ({
   id: pub._id,
@@ -36,6 +38,7 @@ const buildOrderResponse = async (order, role) => {
     publication: pub ? buildPublicationSnippet(pub) : null,
     status: order.status,
     created_at: order.created_at,
+    updated_at: order.updated_at,
   };
 
   if (role === "CONSUMIDOR") {
@@ -97,14 +100,17 @@ const createOrder = async (consumerId, publicationId) => {
     commerce: commerceSnippet,
     status: order.status,
     created_at: order.created_at,
+    updated_at: order.updated_at,
   };
 };
 
 const listOrders = async (userId, role, query) => {
-  const { status, page = 1, limit = 20 } = query;
+  const { status, page = 1, limit = 20, date_from, date_to } = query;
 
   const filter = role === "CONSUMIDOR" ? { consumer_id: userId } : { commerce_id: userId };
   if (status) filter.status = status;
+  const dateFilter = buildDateFilter(date_from, date_to);
+  if (dateFilter) filter.created_at = dateFilter;
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
@@ -114,7 +120,13 @@ const listOrders = async (userId, role, query) => {
     Order.countDocuments(filter),
   ]);
 
-  const results = await Promise.all(orders.map((o) => buildOrderResponse(o, role)));
+  const [results, unreadCounts] = await Promise.all([
+    Promise.all(orders.map((o) => buildOrderResponse(o, role))),
+    Promise.all(orders.map((o) => getUnreadCount(o._id, userId))),
+  ]);
+  results.forEach((r, i) => {
+    r.unread_count = unreadCounts[i];
+  });
 
   return {
     orders: results,
@@ -153,6 +165,7 @@ const getOrderById = async (id, userId) => {
     commerce: commerceSnippet,
     status: order.status,
     created_at: order.created_at,
+    updated_at: order.updated_at,
   };
 };
 
@@ -231,12 +244,14 @@ const deliverOrder = async (id, commerceId) => {
 };
 
 const listAllOrders = async (query) => {
-  const { status, consumer_id, commerce_id, page = 1, limit = 20 } = query;
+  const { status, consumer_id, commerce_id, page = 1, limit = 20, date_from, date_to } = query;
 
   const filter = {};
   if (status) filter.status = status;
   if (consumer_id) filter.consumer_id = consumer_id;
   if (commerce_id) filter.commerce_id = commerce_id;
+  const dateFilter = buildDateFilter(date_from, date_to);
+  if (dateFilter) filter.created_at = dateFilter;
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
