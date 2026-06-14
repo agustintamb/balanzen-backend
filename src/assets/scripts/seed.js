@@ -143,25 +143,21 @@ const seed = async () => {
       { timestamps: false }
     );
 
-  const mkNotif = (
-    userId,
-    type,
-    title,
-    message,
-    refId = null,
-    refType = null,
-    read = false,
-    createdAt = new Date()
-  ) => ({
-    user_id: userId,
-    type,
-    title,
-    message,
-    reference_id: refId,
-    reference_type: refType,
-    read,
-    created_at: createdAt,
-  });
+  // Args posicionales: (userId, type, title, message, refId?, refType?, read?, createdAt?)
+  // Los 4 opcionales se agrupan con rest para no exceder el límite de parámetros (Sonar S107).
+  const mkNotif = (userId, type, title, message, ...optional) => {
+    const [refId = null, refType = null, read = false, createdAt = new Date()] = optional;
+    return {
+      user_id: userId,
+      type,
+      title,
+      message,
+      reference_id: refId,
+      reference_type: refType,
+      read,
+      created_at: createdAt,
+    };
+  };
 
   // ===== COMERCIOS (7) =====
 
