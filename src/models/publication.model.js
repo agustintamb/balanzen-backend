@@ -30,7 +30,8 @@ publicationSchema.index({ category_id: 1 });
 publicationSchema.index({ expiry_date: 1 });
 
 publicationSchema.virtual("discount_pct").get(function () {
-  if (!this.original_price || this.original_price === 0) return 0;
+  if (this.is_donation) return 100;
+  if (!this.original_price) return 0;
   return Math.round((1 - this.final_price / this.original_price) * 100);
 });
 

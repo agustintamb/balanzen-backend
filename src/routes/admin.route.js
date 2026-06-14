@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { body } from "express-validator";
+import dateRangeValidators from "#middlewares/date-range.validator.js";
 import authMiddleware from "#middlewares/auth.middleware.js";
 import roleMiddleware from "#middlewares/role.middleware.js";
 import validate from "#middlewares/validate.middleware.js";
@@ -168,6 +169,18 @@ router.get("/publications", adminListPublications);
  *         schema:
  *           type: string
  *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filtrar pedidos con created_at >= date_from (ISO 8601)
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filtrar pedidos con created_at <= date_to (ISO 8601)
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -180,8 +193,10 @@ router.get("/publications", adminListPublications);
  *     responses:
  *       200:
  *         description: Lista paginada de órdenes
+ *       400:
+ *         description: Parámetros de fecha inválidos
  */
-router.get("/orders", adminListOrders);
+router.get("/orders", ...dateRangeValidators, validate, adminListOrders);
 
 /**
  * @openapi

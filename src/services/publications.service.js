@@ -2,6 +2,9 @@ import { Publication } from "#models/publication.model.js";
 import { Category } from "#models/category.model.js";
 import { User } from "#models/user.model.js";
 import { Address } from "#models/address.model.js";
+import { Order } from "#models/order.model.js";
+import { buildDateFilter } from "#utils/date-filter.helper.js";
+import { getUnreadCount } from "#utils/unread.helper.js";
 
 // Fórmula Haversine para distancia en km entre dos coordenadas
 const haversineKm = (lat1, lng1, lat2, lng2) => {
@@ -254,10 +257,12 @@ const deletePublication = async (id, commerceId) => {
 };
 
 const getMyPublications = async (commerceId, query) => {
-  const { status, page = 1, limit = 20 } = query;
+  const { status, page = 1, limit = 20, date_from, date_to } = query;
 
   const filter = { commerce_id: commerceId };
   if (status) filter.status = status;
+  const dateFilter = buildDateFilter(date_from, date_to);
+  if (dateFilter) filter.created_at = dateFilter;
 
   const [publications, total] = await Promise.all([
     Publication.findWithDeleted(filter)
@@ -270,6 +275,21 @@ const getMyPublications = async (commerceId, query) => {
 
   const { commerce, address } = await resolveCommerceAndAddress(commerceId);
   const results = publications.map((pub) => buildPublicationResponse(pub, commerce, address));
+
+  // Para publicaciones RESERVED, buscar la orden activa y calcular mensajes no leídos
+  const reservedIds = publications.filter((p) => p.status === "RESERVED").map((p) => p._id);
+  const activeOrders = reservedIds.length
+    ? await Order.find({ publication_id: { $in: reservedIds }, status: "RESERVED" })
+    : [];
+  const orderByPubId = Object.fromEntries(activeOrders.map((o) => [o.publication_id, o._id]));
+  const unreadCounts = await Promise.all(
+    activeOrders.map((o) => getUnreadCount(o._id, commerceId))
+  );
+  const unreadByOrderId = Object.fromEntries(activeOrders.map((o, i) => [o._id, unreadCounts[i]]));
+  results.forEach((r) => {
+    const orderId = orderByPubId[r.id];
+    r.unread_count = orderId ? (unreadByOrderId[orderId] ?? 0) : 0;
+  });
 
   return {
     publications: results,

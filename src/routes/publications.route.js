@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { body } from "express-validator";
+import dateRangeValidators from "#middlewares/date-range.validator.js";
 import authMiddleware from "#middlewares/auth.middleware.js";
 import roleMiddleware from "#middlewares/role.middleware.js";
 import validate from "#middlewares/validate.middleware.js";
@@ -30,6 +31,18 @@ const router = Router();
  *           type: string
  *           enum: [ACTIVE, RESERVED, DELIVERED, CANCELLED, EXPIRED]
  *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filtra publicaciones con created_at >= date_from (ISO 8601)
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filtra publicaciones con created_at <= date_to (ISO 8601)
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -42,8 +55,17 @@ const router = Router();
  *     responses:
  *       200:
  *         description: Lista de publicaciones propias
+ *       400:
+ *         description: Parámetros de fecha inválidos
  */
-router.get("/me", authMiddleware, roleMiddleware(["COMERCIO"]), getMyPublicationsHandler);
+router.get(
+  "/me",
+  authMiddleware,
+  roleMiddleware(["COMERCIO"]),
+  ...dateRangeValidators,
+  validate,
+  getMyPublicationsHandler
+);
 
 /**
  * @openapi

@@ -16,7 +16,14 @@ import { selectAddress } from "#services/addresses.service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATEGORIES = ["Verduras", "Frutas", "Panificados", "Lácteos", "Carnes", "Bebidas", "Otros"];
+
+// días desde hoy (positivo = futuro, negativo = pasado) — para expiry_date
 const days = (n) => new Date(Date.now() + n * 86400000);
+// días hacia atrás desde hoy — para created_at
+const past = (n) => new Date(Date.now() - n * 86400000);
+
+// Crea un documento con created_at personalizado (evita que Mongoose lo sobreescriba)
+const saveNew = async (Model, data) => new Model(data).save({ timestamps: false });
 
 const seed = async () => {
   await mongoose.connect(envConfig.mongodbUri);
@@ -125,12 +132,27 @@ const seed = async () => {
       lng,
     });
 
-  const mkMsgs = (orderId, pairs) =>
-    Message.create(
-      pairs.map(([senderId, content]) => ({ order_id: orderId, sender_id: senderId, content }))
+  const mkMsgs = (orderId, pairs, createdAt) =>
+    Message.insertMany(
+      pairs.map(([senderId, content]) => ({
+        order_id: orderId,
+        sender_id: senderId,
+        content,
+        created_at: createdAt || new Date(),
+      })),
+      { timestamps: false }
     );
 
-  const mkNotif = (userId, type, title, message, refId = null, refType = null, read = false) => ({
+  const mkNotif = (
+    userId,
+    type,
+    title,
+    message,
+    refId = null,
+    refType = null,
+    read = false,
+    createdAt = new Date()
+  ) => ({
     user_id: userId,
     type,
     title,
@@ -138,6 +160,7 @@ const seed = async () => {
     reference_id: refId,
     reference_type: refType,
     read,
+    created_at: createdAt,
   });
 
   // ===== COMERCIOS (7) =====
@@ -421,9 +444,22 @@ const seed = async () => {
   console.log("✅  12 consumidores creados (10 con dirección, 2 sin dirección)");
 
   // ===== PUBLICACIONES =====
+  // Distribución de created_at:
+  //   hoy (past 0):        pubFacturas, pubTomates, pubAceite, Pollo, pubPizzaNapo
+  //   últimos días (1-7):  pubBananas, Costillas, pubMedialunas, pubMilanesas, Pizza DON,
+  //                        Tapas, pubQueso, pubFugazzeta, Chorizo, Pan campo, pubLeche,
+  //                        pubAchuras, Espinacas DON, Media humita, Azúcar, pubUvas
+  //   últimas semanas (8-21): pubTortaChocolate, pubYogur, pubZanahorias, pubHamburguesas,
+  //                            pubAtun, Naranjas, pubPanMiga, pubEmpanadas, pubGaseosas,
+  //                            pubMandarinas, pubLentejas, pubPeras
+  //   dentro del mes (22-35): pubPeceto, pubCalzone, pubManzanas, pubMermelada, pubVacio,
+  //                            pubMedialunasGrasa, pubGalletitas, pubCuernitos
+  //   más de un mes (36+):    pubYerba, pubChoclos, pubChipa, pubFideos, Manteca,
+  //                            Torta ricotta, Arroz, pubBizcochos, Alfajores DON,
+  //                            Dulce de leche, Aceite maíz
 
   // --- El Hornito — Panadería (12) ---
-  const pubMedialunas = await Publication.create({
+  const pubMedialunas = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Medialunas de manteca x12",
@@ -433,8 +469,9 @@ const seed = async () => {
     final_price: 840,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(2),
   });
-  const pubFacturas = await Publication.create({
+  const pubFacturas = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Facturas surtidas x8 — vigilantes y cañoncitos",
@@ -444,8 +481,9 @@ const seed = async () => {
     final_price: 960,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(0),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Pan de campo artesanal — DONACIÓN",
@@ -456,8 +494,9 @@ const seed = async () => {
     is_donation: true,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(5),
   });
-  const pubBizcochos = await Publication.create({
+  const pubBizcochos = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Bizcochos de grasa x15",
@@ -466,8 +505,9 @@ const seed = async () => {
     final_price: 960,
     expiry_date: days(1),
     status: "RESERVED",
+    created_at: past(58),
   });
-  const pubChipa = await Publication.create({
+  const pubChipa = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Chipá de almidón x10",
@@ -477,8 +517,9 @@ const seed = async () => {
     final_price: 600,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(47),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Torta de ricotta y dulce de leche",
@@ -487,8 +528,9 @@ const seed = async () => {
     final_price: 1800,
     expiry_date: days(-2),
     status: "EXPIRED",
+    created_at: past(52),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Alfajores de maicena x6 — DONACIÓN",
@@ -499,8 +541,9 @@ const seed = async () => {
     expiry_date: days(-3),
     status: "CANCELLED",
     deleted_at: new Date(),
+    created_at: past(60),
   });
-  const pubPanMiga = await Publication.create({
+  const pubPanMiga = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Pan de miga blanco x2 lonjitas",
@@ -510,8 +553,9 @@ const seed = async () => {
     final_price: 720,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(14),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Tapas de empanada x24",
@@ -521,8 +565,9 @@ const seed = async () => {
     final_price: 480,
     expiry_date: days(2),
     status: "ACTIVE",
+    created_at: past(3),
   });
-  const pubTortaChocolate = await Publication.create({
+  const pubTortaChocolate = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Torta de chocolate 20cm",
@@ -531,8 +576,9 @@ const seed = async () => {
     final_price: 2200,
     expiry_date: days(1),
     status: "RESERVED",
+    created_at: past(8),
   });
-  const pubMedialunasGrasa = await Publication.create({
+  const pubMedialunasGrasa = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Medialunas de grasa x10",
@@ -542,8 +588,9 @@ const seed = async () => {
     final_price: 880,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(32),
   });
-  const pubCuernitos = await Publication.create({
+  const pubCuernitos = await saveNew(Publication, {
     commerce_id: hornito._id,
     category_id: catMap["Panificados"],
     title: "Cuernitos de vainilla x8",
@@ -552,11 +599,12 @@ const seed = async () => {
     final_price: 640,
     expiry_date: days(-2),
     status: "EXPIRED",
+    created_at: past(38),
   });
   console.log("✅  12 publicaciones El Hornito");
 
   // --- La Esquina de Ernesto — Frutería y Verdulería (10) ---
-  const pubBananas = await Publication.create({
+  const pubBananas = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Frutas"],
     title: "Bananas de Ecuador 1 kg",
@@ -566,8 +614,9 @@ const seed = async () => {
     final_price: 320,
     expiry_date: days(2),
     status: "ACTIVE",
+    created_at: past(1),
   });
-  const pubTomates = await Publication.create({
+  const pubTomates = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Verduras"],
     title: "Tomates perita 800g",
@@ -576,8 +625,9 @@ const seed = async () => {
     final_price: 280,
     expiry_date: days(2),
     status: "ACTIVE",
+    created_at: past(0),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Frutas"],
     title: "Naranjas de jugo 2 kg",
@@ -587,8 +637,9 @@ const seed = async () => {
     final_price: 480,
     expiry_date: days(3),
     status: "ACTIVE",
+    created_at: past(11),
   });
-  const pubPeras = await Publication.create({
+  const pubPeras = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Frutas"],
     title: "Peras Williams x5",
@@ -598,8 +649,9 @@ const seed = async () => {
     final_price: 240,
     expiry_date: days(2),
     status: "RESERVED",
+    created_at: past(21),
   });
-  const pubChoclos = await Publication.create({
+  const pubChoclos = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Verduras"],
     title: "Choclos tiernos x4",
@@ -609,8 +661,9 @@ const seed = async () => {
     final_price: 200,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(42),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Verduras"],
     title: "Espinacas frescas — DONACIÓN",
@@ -621,8 +674,9 @@ const seed = async () => {
     is_donation: true,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(7),
   });
-  const pubUvas = await Publication.create({
+  const pubUvas = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Frutas"],
     title: "Uvas negras 1 kg",
@@ -632,8 +686,9 @@ const seed = async () => {
     final_price: 560,
     expiry_date: days(2),
     status: "ACTIVE",
+    created_at: past(4),
   });
-  const pubZanahorias = await Publication.create({
+  const pubZanahorias = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Verduras"],
     title: "Zanahorias baby 500g",
@@ -643,8 +698,9 @@ const seed = async () => {
     final_price: 360,
     expiry_date: days(2),
     status: "RESERVED",
+    created_at: past(9),
   });
-  const pubManzanas = await Publication.create({
+  const pubManzanas = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Frutas"],
     title: "Manzanas rojas x6",
@@ -653,8 +709,9 @@ const seed = async () => {
     final_price: 440,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(26),
   });
-  const pubMandarinas = await Publication.create({
+  const pubMandarinas = await saveNew(Publication, {
     commerce_id: ernesto._id,
     category_id: catMap["Frutas"],
     title: "Mandarinas de Tucumán 2 kg",
@@ -664,11 +721,12 @@ const seed = async () => {
     final_price: 640,
     expiry_date: days(2),
     status: "RESERVED",
+    created_at: past(17),
   });
   console.log("✅  10 publicaciones La Esquina de Ernesto");
 
   // --- La Despensa de Rosi — Almacén (9) ---
-  const pubLeche = await Publication.create({
+  const pubLeche = await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Lácteos"],
     title: "Leche La Serenísima entera x6 sachets",
@@ -678,8 +736,9 @@ const seed = async () => {
     final_price: 2520,
     expiry_date: days(3),
     status: "ACTIVE",
+    created_at: past(5),
   });
-  const pubYogur = await Publication.create({
+  const pubYogur = await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Lácteos"],
     title: "Yogur firme Ser natural x4",
@@ -688,8 +747,9 @@ const seed = async () => {
     final_price: 1400,
     expiry_date: days(4),
     status: "ACTIVE",
+    created_at: past(9),
   });
-  const pubQueso = await Publication.create({
+  const pubQueso = await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Lácteos"],
     title: "Queso cremoso La Paulina 400g",
@@ -698,8 +758,9 @@ const seed = async () => {
     final_price: 1600,
     expiry_date: days(5),
     status: "ACTIVE",
+    created_at: past(3),
   });
-  const pubGaseosas = await Publication.create({
+  const pubGaseosas = await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Bebidas"],
     title: "Gaseosas surtidas x6 (Coca-Cola y 7UP)",
@@ -709,8 +770,9 @@ const seed = async () => {
     final_price: 2400,
     expiry_date: days(4),
     status: "RESERVED",
+    created_at: past(16),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Lácteos"],
     title: "Dulce de leche Sancor 400g",
@@ -720,8 +782,9 @@ const seed = async () => {
     final_price: 900,
     expiry_date: days(7),
     status: "ACTIVE",
+    created_at: past(62),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Lácteos"],
     title: "Manteca Magnolia 200g",
@@ -731,8 +794,9 @@ const seed = async () => {
     final_price: 700,
     expiry_date: days(6),
     status: "ACTIVE",
+    created_at: past(50),
   });
-  const pubMermelada = await Publication.create({
+  const pubMermelada = await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Otros"],
     title: "Mermelada Liguria frutilla 440g",
@@ -741,8 +805,9 @@ const seed = async () => {
     final_price: 1100,
     expiry_date: days(4),
     status: "RESERVED",
+    created_at: past(29),
   });
-  const pubGalletitas = await Publication.create({
+  const pubGalletitas = await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Otros"],
     title: "Galletitas Bagley surtidas x3 paquetes",
@@ -752,8 +817,9 @@ const seed = async () => {
     final_price: 1440,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(36),
   });
-  const pubAceite = await Publication.create({
+  const pubAceite = await saveNew(Publication, {
     commerce_id: rosi._id,
     category_id: catMap["Otros"],
     title: "Aceite de girasol Cocinero 900ml",
@@ -762,11 +828,12 @@ const seed = async () => {
     final_price: 1300,
     expiry_date: days(14),
     status: "ACTIVE",
+    created_at: past(0),
   });
   console.log("✅  9 publicaciones La Despensa de Rosi");
 
   // --- Carnicería San José — Pedro (8) ---
-  const pubMilanesas = await Publication.create({
+  const pubMilanesas = await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Milanesas de nalga x4",
@@ -776,8 +843,9 @@ const seed = async () => {
     final_price: 2400,
     expiry_date: days(2),
     status: "ACTIVE",
+    created_at: past(2),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Chorizo criollo x6",
@@ -787,8 +855,9 @@ const seed = async () => {
     final_price: 1800,
     expiry_date: days(2),
     status: "ACTIVE",
+    created_at: past(6),
   });
-  const pubHamburguesas = await Publication.create({
+  const pubHamburguesas = await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Hamburguesas caseras x4",
@@ -798,8 +867,9 @@ const seed = async () => {
     final_price: 2100,
     expiry_date: days(2),
     status: "RESERVED",
+    created_at: past(11),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Pollo trozado 1.2 kg",
@@ -809,8 +879,9 @@ const seed = async () => {
     final_price: 1900,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(0),
   });
-  const pubPeceto = await Publication.create({
+  const pubPeceto = await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Peceto en tiras 500g",
@@ -820,8 +891,9 @@ const seed = async () => {
     final_price: 1600,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(23),
   });
-  const pubAchuras = await Publication.create({
+  const pubAchuras = await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Achuras surtidas x2 porciones",
@@ -831,8 +903,9 @@ const seed = async () => {
     final_price: 1400,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(5),
   });
-  const pubVacio = await Publication.create({
+  const pubVacio = await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Vacío premium 600g",
@@ -841,8 +914,9 @@ const seed = async () => {
     final_price: 2600,
     expiry_date: days(-2),
     status: "EXPIRED",
+    created_at: past(29),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: pedro._id,
     category_id: catMap["Carnes"],
     title: "Costillas de cerdo 800g",
@@ -852,11 +926,12 @@ const seed = async () => {
     final_price: 2200,
     expiry_date: days(2),
     status: "ACTIVE",
+    created_at: past(1),
   });
   console.log("✅  8 publicaciones Carnicería San José");
 
   // --- Marta — 7 publicaciones ---
-  const pubFideos = await Publication.create({
+  const pubFideos = await saveNew(Publication, {
     commerce_id: marta._id,
     category_id: catMap["Otros"],
     title: "Fideos Matarazzo surtidos x3 paquetes",
@@ -866,8 +941,9 @@ const seed = async () => {
     final_price: 1800,
     expiry_date: days(14),
     status: "ACTIVE",
+    created_at: past(48),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: marta._id,
     category_id: catMap["Otros"],
     title: "Arroz Molinos Río 1 kg",
@@ -876,8 +952,9 @@ const seed = async () => {
     final_price: 900,
     expiry_date: days(21),
     status: "ACTIVE",
+    created_at: past(55),
   });
-  const pubLentejas = await Publication.create({
+  const pubLentejas = await saveNew(Publication, {
     commerce_id: marta._id,
     category_id: catMap["Otros"],
     title: "Lentejas x500g",
@@ -886,8 +963,9 @@ const seed = async () => {
     final_price: 800,
     expiry_date: days(5),
     status: "RESERVED",
+    created_at: past(19),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: marta._id,
     category_id: catMap["Otros"],
     title: "Aceite de maíz Natura 900ml",
@@ -897,8 +975,9 @@ const seed = async () => {
     final_price: 1400,
     expiry_date: days(30),
     status: "ACTIVE",
+    created_at: past(62),
   });
-  const pubYerba = await Publication.create({
+  const pubYerba = await saveNew(Publication, {
     commerce_id: marta._id,
     category_id: catMap["Otros"],
     title: "Yerba Mate Rosamonte 500g",
@@ -908,8 +987,9 @@ const seed = async () => {
     final_price: 1100,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(39),
   });
-  const pubAtun = await Publication.create({
+  const pubAtun = await saveNew(Publication, {
     commerce_id: marta._id,
     category_id: catMap["Otros"],
     title: "Lata de atún La Campagnola x4",
@@ -919,8 +999,9 @@ const seed = async () => {
     final_price: 1600,
     expiry_date: days(10),
     status: "ACTIVE",
+    created_at: past(13),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: marta._id,
     category_id: catMap["Otros"],
     title: "Azúcar La Merced 1 kg",
@@ -929,11 +1010,12 @@ const seed = async () => {
     final_price: 700,
     expiry_date: days(60),
     status: "ACTIVE",
+    created_at: past(4),
   });
   console.log("✅  7 publicaciones Mercado Todo");
 
   // --- Pizzería Rey — Carlos (6) ---
-  const pubPizzaNapo = await Publication.create({
+  const pubPizzaNapo = await saveNew(Publication, {
     commerce_id: carlos._id,
     category_id: catMap["Panificados"],
     title: "Pizza napolitana 34cm",
@@ -943,8 +1025,9 @@ const seed = async () => {
     final_price: 2720,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(0),
   });
-  const pubFugazzeta = await Publication.create({
+  const pubFugazzeta = await saveNew(Publication, {
     commerce_id: carlos._id,
     category_id: catMap["Panificados"],
     title: "Fugazzeta rellena 30cm",
@@ -954,8 +1037,9 @@ const seed = async () => {
     final_price: 3000,
     expiry_date: days(1),
     status: "RESERVED",
+    created_at: past(5),
   });
-  const pubEmpanadas = await Publication.create({
+  const pubEmpanadas = await saveNew(Publication, {
     commerce_id: carlos._id,
     category_id: catMap["Panificados"],
     title: "Empanadas de carne x12",
@@ -965,8 +1049,9 @@ const seed = async () => {
     final_price: 3360,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(14),
   });
-  const pubCalzone = await Publication.create({
+  const pubCalzone = await saveNew(Publication, {
     commerce_id: carlos._id,
     category_id: catMap["Panificados"],
     title: "Calzone de ricotta y espinaca",
@@ -976,8 +1061,9 @@ const seed = async () => {
     final_price: 2240,
     expiry_date: days(-1),
     status: "DELIVERED",
+    created_at: past(25),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: carlos._id,
     category_id: catMap["Panificados"],
     title: "Media docena empanadas de humita",
@@ -987,8 +1073,9 @@ const seed = async () => {
     final_price: 1680,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(7),
   });
-  await Publication.create({
+  await saveNew(Publication, {
     commerce_id: carlos._id,
     category_id: catMap["Panificados"],
     title: "Pizza de mozzarella 34cm — DONACIÓN",
@@ -999,779 +1086,930 @@ const seed = async () => {
     is_donation: true,
     expiry_date: days(1),
     status: "ACTIVE",
+    created_at: past(2),
   });
   console.log("✅  6 publicaciones Pizzería Rey");
 
   // ===== ÓRDENES (20) =====
 
-  const orderValentinaBizcochos = await Order.create({
+  const orderValentinaBizcochos = await saveNew(Order, {
     consumer_id: valentina._id,
     commerce_id: hornito._id,
     publication_id: pubBizcochos._id,
     status: "RESERVED",
+    created_at: past(57),
   });
-  const orderGonzaloPeras = await Order.create({
+  const orderGonzaloPeras = await saveNew(Order, {
     consumer_id: gonzalo._id,
     commerce_id: ernesto._id,
     publication_id: pubPeras._id,
     status: "RESERVED",
+    created_at: past(20),
   });
-  const orderSofiaGaseosas = await Order.create({
+  const orderSofiaGaseosas = await saveNew(Order, {
     consumer_id: sofia._id,
     commerce_id: rosi._id,
     publication_id: pubGaseosas._id,
     status: "RESERVED",
+    created_at: past(15),
   });
-  const orderDiegoChoclos = await Order.create({
+  const orderDiegoChoclos = await saveNew(Order, {
     consumer_id: diego._id,
     commerce_id: ernesto._id,
     publication_id: pubChoclos._id,
     status: "DELIVERED",
+    created_at: past(41),
   });
-  const orderNataliaChipa = await Order.create({
+  const orderNataliaChipa = await saveNew(Order, {
     consumer_id: natalia._id,
     commerce_id: hornito._id,
     publication_id: pubChipa._id,
     status: "DELIVERED",
+    created_at: past(46),
   });
-  await Order.create({
+  await saveNew(Order, {
     consumer_id: gonzalo._id,
     commerce_id: rosi._id,
     publication_id: pubLeche._id,
     status: "CANCELLED",
+    created_at: past(3),
   });
-  const orderLucas = await Order.create({
+  const orderLucas = await saveNew(Order, {
     consumer_id: lucas._id,
     commerce_id: hornito._id,
     publication_id: pubTortaChocolate._id,
     status: "RESERVED",
+    created_at: past(7),
   });
-  const orderAna = await Order.create({
+  const orderAna = await saveNew(Order, {
     consumer_id: ana._id,
     commerce_id: hornito._id,
     publication_id: pubMedialunasGrasa._id,
     status: "DELIVERED",
+    created_at: past(31),
   });
-  const orderJulian = await Order.create({
+  const orderJulian = await saveNew(Order, {
     consumer_id: julian._id,
     commerce_id: ernesto._id,
     publication_id: pubZanahorias._id,
     status: "RESERVED",
+    created_at: past(8),
   });
-  const orderPaula = await Order.create({
+  const orderPaula = await saveNew(Order, {
     consumer_id: paula._id,
     commerce_id: ernesto._id,
     publication_id: pubManzanas._id,
     status: "DELIVERED",
+    created_at: past(25),
   });
-  const orderRoberto = await Order.create({
+  const orderRoberto = await saveNew(Order, {
     consumer_id: roberto._id,
     commerce_id: rosi._id,
     publication_id: pubMermelada._id,
     status: "RESERVED",
+    created_at: past(28),
   });
-  const orderValentina2 = await Order.create({
+  const orderValentina2 = await saveNew(Order, {
     consumer_id: valentina._id,
     commerce_id: rosi._id,
     publication_id: pubGalletitas._id,
     status: "DELIVERED",
+    created_at: past(35),
   });
-  const orderGonzalo2 = await Order.create({
+  const orderGonzalo2 = await saveNew(Order, {
     consumer_id: gonzalo._id,
     commerce_id: pedro._id,
     publication_id: pubHamburguesas._id,
     status: "RESERVED",
+    created_at: past(10),
   });
-  const orderDiego2 = await Order.create({
+  const orderDiego2 = await saveNew(Order, {
     consumer_id: diego._id,
     commerce_id: pedro._id,
     publication_id: pubPeceto._id,
     status: "DELIVERED",
+    created_at: past(22),
   });
-  await Order.create({
+  await saveNew(Order, {
     consumer_id: paula._id,
     commerce_id: pedro._id,
     publication_id: pubAchuras._id,
     status: "CANCELLED",
+    created_at: past(4),
   });
-  const orderSofia2 = await Order.create({
+  const orderSofia2 = await saveNew(Order, {
     consumer_id: sofia._id,
     commerce_id: marta._id,
     publication_id: pubLentejas._id,
     status: "RESERVED",
+    created_at: past(18),
   });
-  const orderNatalia2 = await Order.create({
+  const orderNatalia2 = await saveNew(Order, {
     consumer_id: natalia._id,
     commerce_id: marta._id,
     publication_id: pubYerba._id,
     status: "DELIVERED",
+    created_at: past(38),
   });
-  const orderLucas2 = await Order.create({
+  const orderLucas2 = await saveNew(Order, {
     consumer_id: lucas._id,
     commerce_id: carlos._id,
     publication_id: pubFugazzeta._id,
     status: "RESERVED",
+    created_at: past(3),
   });
-  const orderAna2 = await Order.create({
+  const orderAna2 = await saveNew(Order, {
     consumer_id: ana._id,
     commerce_id: carlos._id,
     publication_id: pubCalzone._id,
     status: "DELIVERED",
+    created_at: past(24),
   });
-  const orderRoberto2 = await Order.create({
+  const orderRoberto2 = await saveNew(Order, {
     consumer_id: roberto._id,
     commerce_id: ernesto._id,
     publication_id: pubMandarinas._id,
     status: "RESERVED",
+    created_at: past(15),
   });
 
   console.log("✅  20 órdenes creadas");
 
   // ===== MENSAJES (72) =====
+  // created_at de los mensajes se alinea con la fecha de creación de la orden
 
-  await mkMsgs(orderValentinaBizcochos._id, [
-    [valentina._id, "Hola! Paso a buscar los bizcochos hoy a las 17hs, está bien?"],
+  await mkMsgs(
+    orderValentinaBizcochos._id,
     [
-      hornito._id,
-      "Buenas Valentina! Sí claro, te los tengo guardados hasta las 20hs. Estamos en Corrientes 2468.",
+      [valentina._id, "Hola! Paso a buscar los bizcochos hoy a las 17hs, está bien?"],
+      [
+        hornito._id,
+        "Buenas Valentina! Sí claro, te los tengo guardados hasta las 20hs. Estamos en Corrientes 2468.",
+      ],
+      [valentina._id, "Perfecto, muchas gracias! Son para el desayuno de mañana."],
+      [hornito._id, "Excelente! Fresquitos van a estar. Cualquier cosa avisame."],
+      [valentina._id, "Dale, en un rato estoy."],
     ],
-    [valentina._id, "Perfecto, muchas gracias! Son para el desayuno de mañana."],
-    [hornito._id, "Excelente! Fresquitos van a estar. Cualquier cosa avisame."],
-    [valentina._id, "Dale, en un rato estoy."],
-  ]);
-  await mkMsgs(orderGonzaloPeras._id, [
-    [gonzalo._id, "Buen día! ¿A qué hora cierran hoy para pasar a retirar las peras?"],
+    past(57)
+  );
+  await mkMsgs(
+    orderGonzaloPeras._id,
     [
-      ernesto._id,
-      "Buenas Gonzalo! Hoy cerramos a las 19hs. Pasá cuando quieras, estamos en Balcarce 460.",
+      [gonzalo._id, "Buen día! ¿A qué hora cierran hoy para pasar a retirar las peras?"],
+      [
+        ernesto._id,
+        "Buenas Gonzalo! Hoy cerramos a las 19hs. Pasá cuando quieras, estamos en Balcarce 460.",
+      ],
+      [gonzalo._id, "Perfecto, caigo a las 18hs. Gracias!"],
     ],
-    [gonzalo._id, "Perfecto, caigo a las 18hs. Gracias!"],
-  ]);
-  await mkMsgs(orderSofiaGaseosas._id, [
-    [sofia._id, "Hola! Reservé las gaseosas. ¿Las pueden guardar hasta las 19hs?"],
-    [rosi._id, "Hola Sofía! Claro, sin problema. Estamos en Rivadavia 5600, Caballito."],
-    [sofia._id, "Perfecto, voy a las 19hs pasadas."],
-    [rosi._id, "Dale, te las tenemos guardadas. ¡Hasta luego!"],
-  ]);
-  await mkMsgs(orderDiegoChoclos._id, [
-    [diego._id, "Hola, reservé los choclos. Paso a buscarlos mañana a la mañana."],
-    [ernesto._id, "Perfecto Diego! Te los tengo apartados."],
-    [diego._id, "Gracias, ya los retiré. Muy tiernos, ideales para la parrilla!"],
-    [ernesto._id, "Qué bueno! Bienvenido cuando quieras."],
-  ]);
-  await mkMsgs(orderLucas._id, [
-    [lucas._id, "Buenas! Reservé la torta. ¿Tienen caja para llevarla?"],
-    [hornito._id, "Hola Lucas! Sí, la embalamos bien para que no se deforme. ¿A qué hora pasás?"],
-    [lucas._id, "A las 16hs aproximadamente."],
-    [hornito._id, "Perfecto. Podés pagar en efectivo o transferencia, lo que prefieras."],
-    [lucas._id, "Transferencia me viene mejor. ¿Cuál es el alias?"],
-    [hornito._id, "HORNITO.CABA. Mandá el comprobante al pasar, ¡te esperamos!"],
-  ]);
-  await mkMsgs(orderAna._id, [
-    [hornito._id, "¡Hola Ana! Las medialunas de grasa están listas para retirar."],
-    [ana._id, "Genial, voy en unos minutos."],
-    [hornito._id, "Perfecto, te esperamos."],
-    [ana._id, "Ya las retiré. Riquísimas, muchas gracias!"],
-  ]);
-  await mkMsgs(orderJulian._id, [
-    [julian._id, "Buenas tardes. ¿Las zanahorias llegaron hoy?"],
-    [ernesto._id, "Hola Julián! Sí, compra de esta mañana. Muy buenas para jugo o para ensalada."],
-    [julian._id, "Perfecto, paso a las 17hs."],
-    [ernesto._id, "Anotado. Estamos en Balcarce 460, San Telmo."],
-    [julian._id, "¡Gracias, nos vemos pronto!"],
-  ]);
-  await mkMsgs(orderPaula._id, [
-    [paula._id, "Hola! Ya pasé a buscar las manzanas. Muy buenas, gracias."],
-    [ernesto._id, "Qué bueno Paula! Gracias a vos. Volvé cuando quieras."],
-    [paula._id, "La semana que viene seguro paso de nuevo."],
-  ]);
-  await mkMsgs(orderRoberto._id, [
-    [roberto._id, "Hola! ¿La mermelada de frutilla viene en pote o frasco de vidrio?"],
-    [rosi._id, "Hola Roberto! Es en frasco de vidrio, 440g. Muy buena, semi-artesanal."],
-    [roberto._id, "Perfecto, paso mañana a la mañana."],
-    [rosi._id, "Te la guardamos hasta las 12hs. ¡Hasta mañana!"],
-  ]);
-  await mkMsgs(orderValentina2._id, [
-    [valentina._id, "Hola de vuelta! Reservé las galletitas."],
-    [rosi._id, "¡Hola Valentina! Qué bueno verte de vuelta. ¿Venís hoy?"],
-    [valentina._id, "Sí, a las 18hs."],
-    [rosi._id, "Perfecto, te las tenemos listas."],
-    [valentina._id, "¡Ya las retiré! Como siempre, excelente atención. Gracias Rosi."],
-  ]);
-  await mkMsgs(orderGonzalo2._id, [
-    [gonzalo._id, "Hola! Vi las hamburguesas. ¿De qué carne son?"],
-    [pedro._id, "¡Hola Gonzalo! Son de paleta con chimichurri, 100% artesanales, 200g cada una."],
-    [gonzalo._id, "¿Las puedo congelar si no las uso todas hoy?"],
-    [pedro._id, "Sí, sin problema. Aguantan 3 meses congeladas."],
-    [gonzalo._id, "Genial. Paso esta tarde a retirarlas."],
-    [pedro._id, "Perfecto, te esperamos. Estamos en Medrano 800, Almagro."],
-  ]);
-  await mkMsgs(orderDiego2._id, [
-    [diego._id, "Buenas! Ya retiré el peceto. Calidad top."],
-    [pedro._id, "Gracias Diego! ¿Cómo lo preparaste?"],
-    [diego._id, "Al horno con papas. Quedó espectacular."],
-    [pedro._id, "Qué bueno! Cuando quieras más, avisanos."],
-  ]);
-  await mkMsgs(orderSofia2._id, [
-    [sofia._id, "Hola! ¿Las lentejas están bien conservadas?"],
-    [marta._id, "Hola Sofía! Sí, son de stock nuevo, vencen en 8 meses. Ideales para guiso."],
-    [sofia._id, "Perfecto, paso mañana a la mañana."],
-  ]);
-  await mkMsgs(orderNatalia2._id, [
-    [natalia._id, "Hola! Reservé la yerba, me quedé sin stock en casa jaja."],
-    [marta._id, "¡Hola Natalia! Jaja, la Rosamonte no puede faltar. ¿Pasás hoy?"],
-    [natalia._id, "Sí, ahora en un rato."],
-    [marta._id, "Ya la tenemos lista. ¡Hasta ahora!"],
-  ]);
-  await mkMsgs(orderLucas2._id, [
-    [lucas._id, "Hola! ¿La fugazzeta sale del horno a qué hora?"],
-    [carlos._id, "Hola Lucas! A las 18:30. Para las 20hs la tenés perfecta."],
-    [lucas._id, "¿Tiene mucho queso?"],
-    [carlos._id, "Doble muzzarella y cebolla caramelizada. Una bomba garantizada."],
-    [lucas._id, "Jaja perfecto! Paso a las 20hs entonces."],
-  ]);
-  await mkMsgs(orderAna2._id, [
-    [ana._id, "Hola! Ya retiré el calzone. Estaba riquísimo."],
-    [carlos._id, "¡Gracias Ana! ¿Te gustó el relleno?"],
-    [ana._id, "Sí, el de ricotta y espinaca está muy bueno. Vuelvo pronto."],
-  ]);
-  await mkMsgs(orderRoberto2._id, [
-    [roberto._id, "Hola! ¿Las mandarinas tienen cáscara fácil de pelar?"],
+    past(20)
+  );
+  await mkMsgs(
+    orderSofiaGaseosas._id,
     [
-      ernesto._id,
-      "Hola Roberto! Sí, son tucumanas, muy jugosas y fáciles de pelar. Las favoritas del barrio.",
+      [sofia._id, "Hola! Reservé las gaseosas. ¿Las pueden guardar hasta las 19hs?"],
+      [rosi._id, "Hola Sofía! Claro, sin problema. Estamos en Rivadavia 5600, Caballito."],
+      [sofia._id, "Perfecto, voy a las 19hs pasadas."],
+      [rosi._id, "Dale, te las tenemos guardadas. ¡Hasta luego!"],
     ],
-    [roberto._id, "Paso esta tarde. ¿Hasta qué hora están?"],
-    [ernesto._id, "Hasta las 19hs. ¡Te esperamos!"],
-  ]);
+    past(15)
+  );
+  await mkMsgs(
+    orderDiegoChoclos._id,
+    [
+      [diego._id, "Hola, reservé los choclos. Paso a buscarlos mañana a la mañana."],
+      [ernesto._id, "Perfecto Diego! Te los tengo apartados."],
+      [diego._id, "Gracias, ya los retiré. Muy tiernos, ideales para la parrilla!"],
+      [ernesto._id, "Qué bueno! Bienvenido cuando quieras."],
+    ],
+    past(41)
+  );
+  await mkMsgs(
+    orderLucas._id,
+    [
+      [lucas._id, "Buenas! Reservé la torta. ¿Tienen caja para llevarla?"],
+      [hornito._id, "Hola Lucas! Sí, la embalamos bien para que no se deforme. ¿A qué hora pasás?"],
+      [lucas._id, "A las 16hs aproximadamente."],
+      [hornito._id, "Perfecto. Podés pagar en efectivo o transferencia, lo que prefieras."],
+      [lucas._id, "Transferencia me viene mejor. ¿Cuál es el alias?"],
+      [hornito._id, "HORNITO.CABA. Mandá el comprobante al pasar, ¡te esperamos!"],
+    ],
+    past(7)
+  );
+  await mkMsgs(
+    orderAna._id,
+    [
+      [hornito._id, "¡Hola Ana! Las medialunas de grasa están listas para retirar."],
+      [ana._id, "Genial, voy en unos minutos."],
+      [hornito._id, "Perfecto, te esperamos."],
+      [ana._id, "Ya las retiré. Riquísimas, muchas gracias!"],
+    ],
+    past(31)
+  );
+  await mkMsgs(
+    orderJulian._id,
+    [
+      [julian._id, "Buenas tardes. ¿Las zanahorias llegaron hoy?"],
+      [
+        ernesto._id,
+        "Hola Julián! Sí, compra de esta mañana. Muy buenas para jugo o para ensalada.",
+      ],
+      [julian._id, "Perfecto, paso a las 17hs."],
+      [ernesto._id, "Anotado. Estamos en Balcarce 460, San Telmo."],
+      [julian._id, "¡Gracias, nos vemos pronto!"],
+    ],
+    past(8)
+  );
+  await mkMsgs(
+    orderPaula._id,
+    [
+      [paula._id, "Hola! Ya pasé a buscar las manzanas. Muy buenas, gracias."],
+      [ernesto._id, "Qué bueno Paula! Gracias a vos. Volvé cuando quieras."],
+      [paula._id, "La semana que viene seguro paso de nuevo."],
+    ],
+    past(25)
+  );
+  await mkMsgs(
+    orderRoberto._id,
+    [
+      [roberto._id, "Hola! ¿La mermelada de frutilla viene en pote o frasco de vidrio?"],
+      [rosi._id, "Hola Roberto! Es en frasco de vidrio, 440g. Muy buena, semi-artesanal."],
+      [roberto._id, "Perfecto, paso mañana a la mañana."],
+      [rosi._id, "Te la guardamos hasta las 12hs. ¡Hasta mañana!"],
+    ],
+    past(28)
+  );
+  await mkMsgs(
+    orderValentina2._id,
+    [
+      [valentina._id, "Hola de vuelta! Reservé las galletitas."],
+      [rosi._id, "¡Hola Valentina! Qué bueno verte de vuelta. ¿Venís hoy?"],
+      [valentina._id, "Sí, a las 18hs."],
+      [rosi._id, "Perfecto, te las tenemos listas."],
+      [valentina._id, "¡Ya las retiré! Como siempre, excelente atención. Gracias Rosi."],
+    ],
+    past(35)
+  );
+  await mkMsgs(
+    orderGonzalo2._id,
+    [
+      [gonzalo._id, "Hola! Vi las hamburguesas. ¿De qué carne son?"],
+      [pedro._id, "¡Hola Gonzalo! Son de paleta con chimichurri, 100% artesanales, 200g cada una."],
+      [gonzalo._id, "¿Las puedo congelar si no las uso todas hoy?"],
+      [pedro._id, "Sí, sin problema. Aguantan 3 meses congeladas."],
+      [gonzalo._id, "Genial. Paso esta tarde a retirarlas."],
+      [pedro._id, "Perfecto, te esperamos. Estamos en Medrano 800, Almagro."],
+    ],
+    past(10)
+  );
+  await mkMsgs(
+    orderDiego2._id,
+    [
+      [diego._id, "Buenas! Ya retiré el peceto. Calidad top."],
+      [pedro._id, "Gracias Diego! ¿Cómo lo preparaste?"],
+      [diego._id, "Al horno con papas. Quedó espectacular."],
+      [pedro._id, "Qué bueno! Cuando quieras más, avisanos."],
+    ],
+    past(22)
+  );
+  await mkMsgs(
+    orderSofia2._id,
+    [
+      [sofia._id, "Hola! ¿Las lentejas están bien conservadas?"],
+      [marta._id, "Hola Sofía! Sí, son de stock nuevo, vencen en 8 meses. Ideales para guiso."],
+      [sofia._id, "Perfecto, paso mañana a la mañana."],
+    ],
+    past(18)
+  );
+  await mkMsgs(
+    orderNatalia2._id,
+    [
+      [natalia._id, "Hola! Reservé la yerba, me quedé sin stock en casa jaja."],
+      [marta._id, "¡Hola Natalia! Jaja, la Rosamonte no puede faltar. ¿Pasás hoy?"],
+      [natalia._id, "Sí, ahora en un rato."],
+      [marta._id, "Ya la tenemos lista. ¡Hasta ahora!"],
+    ],
+    past(38)
+  );
+  await mkMsgs(
+    orderLucas2._id,
+    [
+      [lucas._id, "Hola! ¿La fugazzeta sale del horno a qué hora?"],
+      [carlos._id, "Hola Lucas! A las 18:30. Para las 20hs la tenés perfecta."],
+      [lucas._id, "¿Tiene mucho queso?"],
+      [carlos._id, "Doble muzzarella y cebolla caramelizada. Una bomba garantizada."],
+      [lucas._id, "Jaja perfecto! Paso a las 20hs entonces."],
+    ],
+    past(3)
+  );
+  await mkMsgs(
+    orderAna2._id,
+    [
+      [ana._id, "Hola! Ya retiré el calzone. Estaba riquísimo."],
+      [carlos._id, "¡Gracias Ana! ¿Te gustó el relleno?"],
+      [ana._id, "Sí, el de ricotta y espinaca está muy bueno. Vuelvo pronto."],
+    ],
+    past(24)
+  );
+  await mkMsgs(
+    orderRoberto2._id,
+    [
+      [roberto._id, "Hola! ¿Las mandarinas tienen cáscara fácil de pelar?"],
+      [
+        ernesto._id,
+        "Hola Roberto! Sí, son tucumanas, muy jugosas y fáciles de pelar. Las favoritas del barrio.",
+      ],
+      [roberto._id, "Paso esta tarde. ¿Hasta qué hora están?"],
+      [ernesto._id, "Hasta las 19hs. ¡Te esperamos!"],
+    ],
+    past(15)
+  );
 
   console.log("✅  72 mensajes creados");
 
   // ===== NOTIFICACIONES (52) =====
 
-  await Notification.create([
-    // Reservas existentes
-    mkNotif(
-      hornito._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Valentina Suárez reservó Bizcochos de grasa x15",
-      orderValentinaBizcochos._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      hornito._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Natalia Ferreyra reservó Chipá de almidón x10",
-      orderNataliaChipa._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      hornito._id,
-      "RESERVATION_CANCELLED_BY_CONSUMER",
-      "Reserva cancelada",
-      "Gonzalo López canceló su reserva de Leche La Serenísima x6",
-      null,
-      null,
-      false
-    ),
-    mkNotif(
-      hornito._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Valentina Suárez te envió un mensaje",
-      orderValentinaBizcochos._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Gonzalo López reservó Peras Williams x5",
-      orderGonzaloPeras._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Diego Hernández reservó Choclos tiernos x4",
-      orderDiegoChoclos._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Gonzalo López te envió un mensaje",
-      orderGonzaloPeras._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      rosi._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Sofía Romero reservó Gaseosas surtidas x6",
-      orderSofiaGaseosas._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      valentina._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Panadería El Hornito te envió un mensaje",
-      orderValentinaBizcochos._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      diego._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Choclos tiernos x4 fue marcado como entregado",
-      orderDiegoChoclos._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      natalia._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Chipá de almidón x10 fue marcado como entregado",
-      orderNataliaChipa._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      gonzalo._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Frutería y Verdulería La Esquina de Ernesto te envió un mensaje",
-      orderGonzaloPeras._id,
-      "ORDER",
-      true
-    ),
-    // Nuevas reservas
-    mkNotif(
-      hornito._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Lucas Medina reservó Torta de chocolate 20cm",
-      orderLucas._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      hornito._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Ana Gómez reservó Medialunas de grasa x10",
-      orderAna._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Julián Castro reservó Zanahorias baby 500g",
-      orderJulian._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Paula Vargas reservó Manzanas rojas x6",
-      orderPaula._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Roberto Silva reservó Mandarinas de Tucumán 2 kg",
-      orderRoberto2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      rosi._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Roberto Silva reservó Mermelada Liguria frutilla 440g",
-      orderRoberto._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      rosi._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Valentina Suárez reservó Galletitas Bagley surtidas x3 paquetes",
-      orderValentina2._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      pedro._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Gonzalo López reservó Hamburguesas caseras x4",
-      orderGonzalo2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      pedro._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Diego Hernández reservó Peceto en tiras 500g",
-      orderDiego2._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      marta._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Sofía Romero reservó Lentejas x500g",
-      orderSofia2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      marta._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Natalia Ferreyra reservó Yerba Mate Rosamonte 500g",
-      orderNatalia2._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      carlos._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Lucas Medina reservó Fugazzeta rellena 30cm",
-      orderLucas2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      carlos._id,
-      "NEW_RESERVATION",
-      "Nueva reserva",
-      "Ana Gómez reservó Calzone de ricotta y espinaca",
-      orderAna2._id,
-      "ORDER",
-      true
-    ),
-    // Pedidos entregados
-    mkNotif(
-      ana._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Medialunas de grasa x10 fue marcado como entregado",
-      orderAna._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      paula._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Manzanas rojas x6 fue marcado como entregado",
-      orderPaula._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      valentina._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Galletitas Bagley surtidas x3 paquetes fue marcado como entregado",
-      orderValentina2._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      diego._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Peceto en tiras 500g fue marcado como entregado",
-      orderDiego2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      natalia._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Yerba Mate Rosamonte 500g fue marcado como entregado",
-      orderNatalia2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      ana._id,
-      "ORDER_DELIVERED",
-      "Pedido entregado",
-      "Tu pedido de Calzone de ricotta y espinaca fue marcado como entregado",
-      orderAna2._id,
-      "ORDER",
-      true
-    ),
-    // Reserva cancelada
-    mkNotif(
-      pedro._id,
-      "RESERVATION_CANCELLED_BY_CONSUMER",
-      "Reserva cancelada",
-      "Paula Vargas canceló su reserva de Achuras surtidas x2 porciones",
-      null,
-      null,
-      false
-    ),
-    // Nuevos mensajes
-    mkNotif(
-      rosi._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Sofía Romero te envió un mensaje",
-      orderSofiaGaseosas._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      sofia._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Almacén La Despensa de Rosi te envió un mensaje",
-      orderSofiaGaseosas._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      hornito._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Lucas Medina te envió un mensaje",
-      orderLucas._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      lucas._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Panadería El Hornito te envió un mensaje",
-      orderLucas._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Julián Castro te envió un mensaje",
-      orderJulian._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      julian._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Frutería y Verdulería La Esquina de Ernesto te envió un mensaje",
-      orderJulian._id,
-      "ORDER",
-      true
-    ),
-    mkNotif(
-      pedro._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Gonzalo López te envió un mensaje",
-      orderGonzalo2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      gonzalo._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Carnicería San José te envió un mensaje",
-      orderGonzalo2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      carlos._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Lucas Medina te envió un mensaje",
-      orderLucas2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      lucas._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Pizzería Rey te envió un mensaje",
-      orderLucas2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      ernesto._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Roberto Silva te envió un mensaje",
-      orderRoberto2._id,
-      "ORDER",
-      false
-    ),
-    mkNotif(
-      roberto._id,
-      "NEW_MESSAGE",
-      "Nuevo mensaje",
-      "Frutería y Verdulería La Esquina de Ernesto te envió un mensaje",
-      orderRoberto2._id,
-      "ORDER",
-      false
-    ),
-    // Publicaciones por vencer
-    mkNotif(
-      hornito._id,
-      "PUBLICATION_EXPIRING",
-      "Publicación por vencer",
-      "Tu publicación 'Medialunas de manteca x12' vence en menos de 24hs",
-      pubMedialunas._id,
-      "PUBLICATION",
-      false
-    ),
-    mkNotif(
-      ernesto._id,
-      "PUBLICATION_EXPIRING",
-      "Publicación por vencer",
-      "Tu publicación 'Bananas de Ecuador 1 kg' vence en menos de 24hs",
-      pubBananas._id,
-      "PUBLICATION",
-      true
-    ),
-    mkNotif(
-      rosi._id,
-      "PUBLICATION_EXPIRING",
-      "Publicación por vencer",
-      "Tu publicación 'Yogur firme Ser natural x4' vence en menos de 24hs",
-      pubYogur._id,
-      "PUBLICATION",
-      false
-    ),
-    mkNotif(
-      pedro._id,
-      "PUBLICATION_EXPIRING",
-      "Publicación por vencer",
-      "Tu publicación 'Milanesas de nalga x4' vence en menos de 24hs",
-      pubMilanesas._id,
-      "PUBLICATION",
-      false
-    ),
-    mkNotif(
-      marta._id,
-      "PUBLICATION_EXPIRING",
-      "Publicación por vencer",
-      "Tu publicación 'Fideos Matarazzo surtidos x3 paquetes' vence en menos de 24hs",
-      pubFideos._id,
-      "PUBLICATION",
-      true
-    ),
-    mkNotif(
-      carlos._id,
-      "PUBLICATION_EXPIRING",
-      "Publicación por vencer",
-      "Tu publicación 'Pizza napolitana 34cm' vence en menos de 24hs",
-      pubPizzaNapo._id,
-      "PUBLICATION",
-      false
-    ),
-    // Publicaciones vencidas
-    mkNotif(
-      hornito._id,
-      "PUBLICATION_EXPIRED",
-      "Publicación vencida",
-      "Tu publicación 'Cuernitos de vainilla x8' ha vencido",
-      pubCuernitos._id,
-      "PUBLICATION",
-      true
-    ),
-    mkNotif(
-      pedro._id,
-      "PUBLICATION_EXPIRED",
-      "Publicación vencida",
-      "Tu publicación 'Vacío premium 600g' ha vencido",
-      pubVacio._id,
-      "PUBLICATION",
-      false
-    ),
-  ]);
+  await Notification.insertMany(
+    [
+      // Reservas existentes
+      mkNotif(
+        hornito._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Valentina Suárez reservó Bizcochos de grasa x15",
+        orderValentinaBizcochos._id,
+        "ORDER",
+        true,
+        past(57)
+      ),
+      mkNotif(
+        hornito._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Natalia Ferreyra reservó Chipá de almidón x10",
+        orderNataliaChipa._id,
+        "ORDER",
+        true,
+        past(46)
+      ),
+      mkNotif(
+        hornito._id,
+        "RESERVATION_CANCELLED_BY_CONSUMER",
+        "Reserva cancelada",
+        "Gonzalo López canceló su reserva de Leche La Serenísima x6",
+        null,
+        null,
+        false,
+        past(3)
+      ),
+      mkNotif(
+        hornito._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Valentina Suárez te envió un mensaje",
+        orderValentinaBizcochos._id,
+        "ORDER",
+        true,
+        past(57)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Gonzalo López reservó Peras Williams x5",
+        orderGonzaloPeras._id,
+        "ORDER",
+        false,
+        past(20)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Diego Hernández reservó Choclos tiernos x4",
+        orderDiegoChoclos._id,
+        "ORDER",
+        true,
+        past(41)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Gonzalo López te envió un mensaje",
+        orderGonzaloPeras._id,
+        "ORDER",
+        false,
+        past(20)
+      ),
+      mkNotif(
+        rosi._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Sofía Romero reservó Gaseosas surtidas x6",
+        orderSofiaGaseosas._id,
+        "ORDER",
+        false,
+        past(15)
+      ),
+      mkNotif(
+        valentina._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Panadería El Hornito te envió un mensaje",
+        orderValentinaBizcochos._id,
+        "ORDER",
+        false,
+        past(57)
+      ),
+      mkNotif(
+        diego._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Choclos tiernos x4 fue marcado como entregado",
+        orderDiegoChoclos._id,
+        "ORDER",
+        true,
+        past(41)
+      ),
+      mkNotif(
+        natalia._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Chipá de almidón x10 fue marcado como entregado",
+        orderNataliaChipa._id,
+        "ORDER",
+        false,
+        past(46)
+      ),
+      mkNotif(
+        gonzalo._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Frutería y Verdulería La Esquina de Ernesto te envió un mensaje",
+        orderGonzaloPeras._id,
+        "ORDER",
+        true,
+        past(20)
+      ),
+      // Nuevas reservas
+      mkNotif(
+        hornito._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Lucas Medina reservó Torta de chocolate 20cm",
+        orderLucas._id,
+        "ORDER",
+        false,
+        past(7)
+      ),
+      mkNotif(
+        hornito._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Ana Gómez reservó Medialunas de grasa x10",
+        orderAna._id,
+        "ORDER",
+        true,
+        past(31)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Julián Castro reservó Zanahorias baby 500g",
+        orderJulian._id,
+        "ORDER",
+        false,
+        past(8)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Paula Vargas reservó Manzanas rojas x6",
+        orderPaula._id,
+        "ORDER",
+        true,
+        past(25)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Roberto Silva reservó Mandarinas de Tucumán 2 kg",
+        orderRoberto2._id,
+        "ORDER",
+        false,
+        past(15)
+      ),
+      mkNotif(
+        rosi._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Roberto Silva reservó Mermelada Liguria frutilla 440g",
+        orderRoberto._id,
+        "ORDER",
+        false,
+        past(28)
+      ),
+      mkNotif(
+        rosi._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Valentina Suárez reservó Galletitas Bagley surtidas x3 paquetes",
+        orderValentina2._id,
+        "ORDER",
+        true,
+        past(35)
+      ),
+      mkNotif(
+        pedro._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Gonzalo López reservó Hamburguesas caseras x4",
+        orderGonzalo2._id,
+        "ORDER",
+        false,
+        past(10)
+      ),
+      mkNotif(
+        pedro._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Diego Hernández reservó Peceto en tiras 500g",
+        orderDiego2._id,
+        "ORDER",
+        true,
+        past(22)
+      ),
+      mkNotif(
+        marta._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Sofía Romero reservó Lentejas x500g",
+        orderSofia2._id,
+        "ORDER",
+        false,
+        past(18)
+      ),
+      mkNotif(
+        marta._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Natalia Ferreyra reservó Yerba Mate Rosamonte 500g",
+        orderNatalia2._id,
+        "ORDER",
+        true,
+        past(38)
+      ),
+      mkNotif(
+        carlos._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Lucas Medina reservó Fugazzeta rellena 30cm",
+        orderLucas2._id,
+        "ORDER",
+        false,
+        past(3)
+      ),
+      mkNotif(
+        carlos._id,
+        "NEW_RESERVATION",
+        "Nueva reserva",
+        "Ana Gómez reservó Calzone de ricotta y espinaca",
+        orderAna2._id,
+        "ORDER",
+        true,
+        past(24)
+      ),
+      // Pedidos entregados
+      mkNotif(
+        ana._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Medialunas de grasa x10 fue marcado como entregado",
+        orderAna._id,
+        "ORDER",
+        true,
+        past(31)
+      ),
+      mkNotif(
+        paula._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Manzanas rojas x6 fue marcado como entregado",
+        orderPaula._id,
+        "ORDER",
+        false,
+        past(25)
+      ),
+      mkNotif(
+        valentina._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Galletitas Bagley surtidas x3 paquetes fue marcado como entregado",
+        orderValentina2._id,
+        "ORDER",
+        true,
+        past(35)
+      ),
+      mkNotif(
+        diego._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Peceto en tiras 500g fue marcado como entregado",
+        orderDiego2._id,
+        "ORDER",
+        false,
+        past(22)
+      ),
+      mkNotif(
+        natalia._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Yerba Mate Rosamonte 500g fue marcado como entregado",
+        orderNatalia2._id,
+        "ORDER",
+        false,
+        past(38)
+      ),
+      mkNotif(
+        ana._id,
+        "ORDER_DELIVERED",
+        "Pedido entregado",
+        "Tu pedido de Calzone de ricotta y espinaca fue marcado como entregado",
+        orderAna2._id,
+        "ORDER",
+        true,
+        past(24)
+      ),
+      // Reserva cancelada
+      mkNotif(
+        pedro._id,
+        "RESERVATION_CANCELLED_BY_CONSUMER",
+        "Reserva cancelada",
+        "Paula Vargas canceló su reserva de Achuras surtidas x2 porciones",
+        null,
+        null,
+        false,
+        past(4)
+      ),
+      // Nuevos mensajes
+      mkNotif(
+        rosi._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Sofía Romero te envió un mensaje",
+        orderSofiaGaseosas._id,
+        "ORDER",
+        true,
+        past(15)
+      ),
+      mkNotif(
+        sofia._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Almacén La Despensa de Rosi te envió un mensaje",
+        orderSofiaGaseosas._id,
+        "ORDER",
+        false,
+        past(15)
+      ),
+      mkNotif(
+        hornito._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Lucas Medina te envió un mensaje",
+        orderLucas._id,
+        "ORDER",
+        false,
+        past(7)
+      ),
+      mkNotif(
+        lucas._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Panadería El Hornito te envió un mensaje",
+        orderLucas._id,
+        "ORDER",
+        false,
+        past(7)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Julián Castro te envió un mensaje",
+        orderJulian._id,
+        "ORDER",
+        false,
+        past(8)
+      ),
+      mkNotif(
+        julian._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Frutería y Verdulería La Esquina de Ernesto te envió un mensaje",
+        orderJulian._id,
+        "ORDER",
+        true,
+        past(8)
+      ),
+      mkNotif(
+        pedro._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Gonzalo López te envió un mensaje",
+        orderGonzalo2._id,
+        "ORDER",
+        false,
+        past(10)
+      ),
+      mkNotif(
+        gonzalo._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Carnicería San José te envió un mensaje",
+        orderGonzalo2._id,
+        "ORDER",
+        false,
+        past(10)
+      ),
+      mkNotif(
+        carlos._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Lucas Medina te envió un mensaje",
+        orderLucas2._id,
+        "ORDER",
+        false,
+        past(3)
+      ),
+      mkNotif(
+        lucas._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Pizzería Rey te envió un mensaje",
+        orderLucas2._id,
+        "ORDER",
+        false,
+        past(3)
+      ),
+      mkNotif(
+        ernesto._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Roberto Silva te envió un mensaje",
+        orderRoberto2._id,
+        "ORDER",
+        false,
+        past(15)
+      ),
+      mkNotif(
+        roberto._id,
+        "NEW_MESSAGE",
+        "Nuevo mensaje",
+        "Frutería y Verdulería La Esquina de Ernesto te envió un mensaje",
+        orderRoberto2._id,
+        "ORDER",
+        false,
+        past(15)
+      ),
+      // Publicaciones por vencer
+      mkNotif(
+        hornito._id,
+        "PUBLICATION_EXPIRING",
+        "Publicación por vencer",
+        "Tu publicación 'Medialunas de manteca x12' vence en menos de 24hs",
+        pubMedialunas._id,
+        "PUBLICATION",
+        false,
+        past(2)
+      ),
+      mkNotif(
+        ernesto._id,
+        "PUBLICATION_EXPIRING",
+        "Publicación por vencer",
+        "Tu publicación 'Bananas de Ecuador 1 kg' vence en menos de 24hs",
+        pubBananas._id,
+        "PUBLICATION",
+        true,
+        past(1)
+      ),
+      mkNotif(
+        rosi._id,
+        "PUBLICATION_EXPIRING",
+        "Publicación por vencer",
+        "Tu publicación 'Yogur firme Ser natural x4' vence en menos de 24hs",
+        pubYogur._id,
+        "PUBLICATION",
+        false,
+        past(2)
+      ),
+      mkNotif(
+        pedro._id,
+        "PUBLICATION_EXPIRING",
+        "Publicación por vencer",
+        "Tu publicación 'Milanesas de nalga x4' vence en menos de 24hs",
+        pubMilanesas._id,
+        "PUBLICATION",
+        false,
+        past(2)
+      ),
+      mkNotif(
+        marta._id,
+        "PUBLICATION_EXPIRING",
+        "Publicación por vencer",
+        "Tu publicación 'Fideos Matarazzo surtidos x3 paquetes' vence en menos de 24hs",
+        pubFideos._id,
+        "PUBLICATION",
+        true,
+        past(2)
+      ),
+      mkNotif(
+        carlos._id,
+        "PUBLICATION_EXPIRING",
+        "Publicación por vencer",
+        "Tu publicación 'Pizza napolitana 34cm' vence en menos de 24hs",
+        pubPizzaNapo._id,
+        "PUBLICATION",
+        false,
+        past(0)
+      ),
+      // Publicaciones vencidas
+      mkNotif(
+        hornito._id,
+        "PUBLICATION_EXPIRED",
+        "Publicación vencida",
+        "Tu publicación 'Cuernitos de vainilla x8' ha vencido",
+        pubCuernitos._id,
+        "PUBLICATION",
+        true,
+        past(38)
+      ),
+      mkNotif(
+        pedro._id,
+        "PUBLICATION_EXPIRED",
+        "Publicación vencida",
+        "Tu publicación 'Vacío premium 600g' ha vencido",
+        pubVacio._id,
+        "PUBLICATION",
+        false,
+        past(29)
+      ),
+    ],
+    { timestamps: false }
+  );
 
   console.log("✅  52 notificaciones creadas");
 
   // ===== FAVORITOS (39) =====
 
-  await Favorite.create([
-    { user_id: valentina._id, publication_id: pubMedialunas._id },
-    { user_id: valentina._id, publication_id: pubBananas._id },
-    { user_id: valentina._id, publication_id: pubTortaChocolate._id },
-    { user_id: valentina._id, publication_id: pubMermelada._id },
-    { user_id: valentina._id, publication_id: pubPizzaNapo._id },
-    { user_id: gonzalo._id, publication_id: pubTomates._id },
-    { user_id: gonzalo._id, publication_id: pubLeche._id },
-    { user_id: gonzalo._id, publication_id: pubFacturas._id },
-    { user_id: gonzalo._id, publication_id: pubHamburguesas._id },
-    { user_id: gonzalo._id, publication_id: pubFideos._id },
-    { user_id: gonzalo._id, publication_id: pubYerba._id },
-    { user_id: sofia._id, publication_id: pubBananas._id },
-    { user_id: sofia._id, publication_id: pubGaseosas._id },
-    { user_id: sofia._id, publication_id: pubLentejas._id },
-    { user_id: sofia._id, publication_id: pubCalzone._id },
-    { user_id: diego._id, publication_id: pubChoclos._id },
-    { user_id: diego._id, publication_id: pubPeceto._id },
-    { user_id: diego._id, publication_id: pubMilanesas._id },
-    { user_id: diego._id, publication_id: pubHamburguesas._id },
-    { user_id: natalia._id, publication_id: pubChipa._id },
-    { user_id: natalia._id, publication_id: pubQueso._id },
-    { user_id: natalia._id, publication_id: pubFugazzeta._id },
-    { user_id: natalia._id, publication_id: pubEmpanadas._id },
-    { user_id: lucas._id, publication_id: pubTortaChocolate._id },
-    { user_id: lucas._id, publication_id: pubBizcochos._id },
-    { user_id: lucas._id, publication_id: pubPanMiga._id },
-    { user_id: ana._id, publication_id: pubGalletitas._id },
-    { user_id: ana._id, publication_id: pubMedialunasGrasa._id },
-    { user_id: ana._id, publication_id: pubPizzaNapo._id },
-    { user_id: julian._id, publication_id: pubZanahorias._id },
-    { user_id: julian._id, publication_id: pubUvas._id },
-    { user_id: julian._id, publication_id: pubChoclos._id },
-    { user_id: paula._id, publication_id: pubManzanas._id },
-    { user_id: paula._id, publication_id: pubAceite._id },
-    { user_id: paula._id, publication_id: pubMandarinas._id },
-    { user_id: roberto._id, publication_id: pubMermelada._id },
-    { user_id: roberto._id, publication_id: pubLentejas._id },
-    { user_id: roberto._id, publication_id: pubAtun._id },
-    { user_id: roberto._id, publication_id: pubMandarinas._id },
-  ]);
+  await Favorite.insertMany(
+    [
+      { user_id: valentina._id, publication_id: pubMedialunas._id, created_at: past(2) },
+      { user_id: valentina._id, publication_id: pubBananas._id, created_at: past(1) },
+      { user_id: valentina._id, publication_id: pubTortaChocolate._id, created_at: past(8) },
+      { user_id: valentina._id, publication_id: pubMermelada._id, created_at: past(29) },
+      { user_id: valentina._id, publication_id: pubPizzaNapo._id, created_at: past(0) },
+      { user_id: gonzalo._id, publication_id: pubTomates._id, created_at: past(0) },
+      { user_id: gonzalo._id, publication_id: pubLeche._id, created_at: past(5) },
+      { user_id: gonzalo._id, publication_id: pubFacturas._id, created_at: past(0) },
+      { user_id: gonzalo._id, publication_id: pubHamburguesas._id, created_at: past(11) },
+      { user_id: gonzalo._id, publication_id: pubFideos._id, created_at: past(48) },
+      { user_id: gonzalo._id, publication_id: pubYerba._id, created_at: past(39) },
+      { user_id: sofia._id, publication_id: pubBananas._id, created_at: past(1) },
+      { user_id: sofia._id, publication_id: pubGaseosas._id, created_at: past(16) },
+      { user_id: sofia._id, publication_id: pubLentejas._id, created_at: past(19) },
+      { user_id: sofia._id, publication_id: pubCalzone._id, created_at: past(25) },
+      { user_id: diego._id, publication_id: pubChoclos._id, created_at: past(42) },
+      { user_id: diego._id, publication_id: pubPeceto._id, created_at: past(23) },
+      { user_id: diego._id, publication_id: pubMilanesas._id, created_at: past(2) },
+      { user_id: diego._id, publication_id: pubHamburguesas._id, created_at: past(11) },
+      { user_id: natalia._id, publication_id: pubChipa._id, created_at: past(47) },
+      { user_id: natalia._id, publication_id: pubQueso._id, created_at: past(3) },
+      { user_id: natalia._id, publication_id: pubFugazzeta._id, created_at: past(5) },
+      { user_id: natalia._id, publication_id: pubEmpanadas._id, created_at: past(14) },
+      { user_id: lucas._id, publication_id: pubTortaChocolate._id, created_at: past(8) },
+      { user_id: lucas._id, publication_id: pubBizcochos._id, created_at: past(58) },
+      { user_id: lucas._id, publication_id: pubPanMiga._id, created_at: past(14) },
+      { user_id: ana._id, publication_id: pubGalletitas._id, created_at: past(36) },
+      { user_id: ana._id, publication_id: pubMedialunasGrasa._id, created_at: past(32) },
+      { user_id: ana._id, publication_id: pubPizzaNapo._id, created_at: past(0) },
+      { user_id: julian._id, publication_id: pubZanahorias._id, created_at: past(9) },
+      { user_id: julian._id, publication_id: pubUvas._id, created_at: past(4) },
+      { user_id: julian._id, publication_id: pubChoclos._id, created_at: past(42) },
+      { user_id: paula._id, publication_id: pubManzanas._id, created_at: past(26) },
+      { user_id: paula._id, publication_id: pubAceite._id, created_at: past(0) },
+      { user_id: paula._id, publication_id: pubMandarinas._id, created_at: past(17) },
+      { user_id: roberto._id, publication_id: pubMermelada._id, created_at: past(29) },
+      { user_id: roberto._id, publication_id: pubLentejas._id, created_at: past(19) },
+      { user_id: roberto._id, publication_id: pubAtun._id, created_at: past(13) },
+      { user_id: roberto._id, publication_id: pubMandarinas._id, created_at: past(17) },
+    ],
+    { timestamps: false }
+  );
 
   console.log("✅  39 favoritos creados");
 
