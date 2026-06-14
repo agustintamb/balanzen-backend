@@ -103,6 +103,40 @@ describe("listPublications", () => {
     expect(result.publications[0].title).toBe("Donación");
   });
 
+  it("excluye donaciones con donation=false (resultados y total)", async () => {
+    await setup();
+    await createPublication(commerceId, PUB_DATA(categoryId));
+    await createPublication(commerceId, {
+      ...PUB_DATA(categoryId),
+      title: "Donación",
+      original_price: 500,
+      final_price: 500,
+    });
+
+    const result = await listPublications({ donation: "false" });
+    expect(result.publications).toHaveLength(1);
+    expect(result.publications[0].title).toBe("Mix de verduras del día");
+    expect(result.publications[0].is_donation).toBe(false);
+    expect(result.pagination.total).toBe(1);
+  });
+
+  it("min_discount con donation=false excluye donaciones del total", async () => {
+    await setup();
+    // 1 descuento real (discount_pct = 50) + 1 donación (discount_pct = 100)
+    await createPublication(commerceId, PUB_DATA(categoryId));
+    await createPublication(commerceId, {
+      ...PUB_DATA(categoryId),
+      title: "Donación",
+      original_price: 500,
+      final_price: 500,
+    });
+
+    const result = await listPublications({ min_discount: 1, donation: "false" });
+    expect(result.publications).toHaveLength(1);
+    expect(result.publications[0].is_donation).toBe(false);
+    expect(result.pagination.total).toBe(1);
+  });
+
   it("filtra por search en título", async () => {
     await setup();
     await createPublication(commerceId, PUB_DATA(categoryId));
