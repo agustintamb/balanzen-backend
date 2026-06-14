@@ -2,8 +2,18 @@ import { Message } from "#models/message.model.js";
 import { Order } from "#models/order.model.js";
 import { Publication } from "#models/publication.model.js";
 import { User } from "#models/user.model.js";
+import { ChatRead } from "#models/chat-read.model.js";
 import { getIO } from "#config/socket.config.js";
 import { createNotification } from "#services/notification.service.js";
+import { getUnreadCount } from "#utils/unread.helper.js";
+
+const markChatAsRead = async (orderId, userId) => {
+  await ChatRead.findOneAndUpdate(
+    { user_id: userId, order_id: orderId },
+    { last_read_at: new Date() },
+    { upsert: true }
+  );
+};
 
 const resolveOrder = async (orderId, userId) => {
   const order = await Order.findById(orderId);
@@ -54,7 +64,7 @@ const listChats = async (userId) => {
               created_at: lastMessage.created_at,
             }
           : null,
-        unread_count: 0,
+        unread_count: await getUnreadCount(order._id, userId),
         order_status: order.status,
       };
     })
@@ -65,6 +75,7 @@ const listChats = async (userId) => {
 
 const getMessages = async (orderId, userId, query) => {
   await resolveOrder(orderId, userId);
+  await markChatAsRead(orderId, userId);
 
   const { page = 1, limit = 50 } = query;
   const [messages, total] = await Promise.all([
@@ -101,6 +112,7 @@ const sendMessage = async (orderId, senderId, content) => {
   }
 
   const message = await Message.create({ order_id: orderId, sender_id: senderId, content });
+  await markChatAsRead(orderId, senderId);
 
   const payload = {
     id: message._id,
@@ -136,4 +148,4 @@ const sendMessage = async (orderId, senderId, content) => {
   return payload;
 };
 
-export { listChats, getMessages, sendMessage };
+export { listChats, getMessages, sendMessage, markChatAsRead };

@@ -173,32 +173,38 @@ El servidor ejecuta dos jobs horarios automáticamente:
 
 | Método | Ruta                       | Auth | Rol        | Descripción                             |
 | ------ | -------------------------- | ---- | ---------- | --------------------------------------- |
-| POST   | `/api/v1/publications`     | JWT  | COMERCIO   | Crea una publicación                    |
-| GET    | `/api/v1/publications`     | JWT  | CONSUMIDOR | Lista publicaciones activas con filtros |
-| GET    | `/api/v1/publications/me`  | JWT  | COMERCIO   | Mis publicaciones (todos los estados)   |
-| GET    | `/api/v1/publications/:id` | JWT  | —          | Detalle de una publicación              |
-| PUT    | `/api/v1/publications/:id` | JWT  | COMERCIO   | Edita una publicación (solo si ACTIVE)  |
-| DELETE | `/api/v1/publications/:id` | JWT  | COMERCIO   | Da de baja (ACTIVE → CANCELLED)         |
+| POST   | `/api/v1/publications`     | JWT  | COMERCIO   | Crea una publicación                                              |
+| GET    | `/api/v1/publications`     | JWT  | CONSUMIDOR | Lista publicaciones activas con filtros                          |
+| GET    | `/api/v1/publications/me`  | JWT  | COMERCIO   | Mis publicaciones (todos los estados). Incluye `unread_count`.   |
+| GET    | `/api/v1/publications/:id` | JWT  | —          | Detalle de una publicación                                        |
+| PUT    | `/api/v1/publications/:id` | JWT  | COMERCIO   | Edita una publicación (solo si ACTIVE)                            |
+| DELETE | `/api/v1/publications/:id` | JWT  | COMERCIO   | Da de baja (ACTIVE → CANCELLED)                                   |
 
 **Filtros de `GET /publications`:** `category_id`, `min_discount`, `max_price`, `donation`, `search`, `sort_by` (created_at, discount_pct, expiry_date, final_price, distance), `sort_order`, `lat`, `lng`, `radius_km`, `page`, `limit`.
 
+**Filtros de `GET /publications/me`:** `status`, `date_from`, `date_to` (ISO 8601), `page`, `limit`.
+
 ### Orders
 
-| Método | Ruta                         | Auth | Rol        | Descripción                           |
-| ------ | ---------------------------- | ---- | ---------- | ------------------------------------- |
-| POST   | `/api/v1/orders`             | JWT  | CONSUMIDOR | Crea una reserva                      |
-| GET    | `/api/v1/orders`             | JWT  | —          | Lista pedidos del usuario autenticado |
-| GET    | `/api/v1/orders/:id`         | JWT  | —          | Detalle de un pedido                  |
-| PUT    | `/api/v1/orders/:id/cancel`  | JWT  | —          | Cancela un pedido (ambas partes)      |
-| PUT    | `/api/v1/orders/:id/deliver` | JWT  | COMERCIO   | Marca un pedido como entregado        |
+| Método | Ruta                         | Auth | Rol        | Descripción                                              |
+| ------ | ---------------------------- | ---- | ---------- | -------------------------------------------------------- |
+| POST   | `/api/v1/orders`             | JWT  | CONSUMIDOR | Crea una reserva                                         |
+| GET    | `/api/v1/orders`             | JWT  | —          | Lista pedidos del usuario autenticado. Incluye `unread_count`. |
+| GET    | `/api/v1/orders/:id`         | JWT  | —          | Detalle de un pedido                                     |
+| PUT    | `/api/v1/orders/:id/cancel`  | JWT  | —          | Cancela un pedido (ambas partes)                         |
+| PUT    | `/api/v1/orders/:id/deliver` | JWT  | COMERCIO   | Marca un pedido como entregado                           |
+
+**Filtros de `GET /orders`:** `status` (RESERVED, DELIVERED, CANCELLED), `date_from`, `date_to` (ISO 8601), `page`, `limit`.
 
 ### Chat
 
-| Método | Ruta                              | Auth | Descripción                                  |
-| ------ | --------------------------------- | ---- | -------------------------------------------- |
-| GET    | `/api/v1/chats`                   | JWT  | Lista conversaciones del usuario             |
-| GET    | `/api/v1/chats/:orderId/messages` | JWT  | Mensajes de un chat (paginados)              |
-| POST   | `/api/v1/chats/:orderId/messages` | JWT  | Envía un mensaje (orden debe estar RESERVED) |
+| Método | Ruta                              | Auth | Descripción                                                        |
+| ------ | --------------------------------- | ---- | ------------------------------------------------------------------ |
+| GET    | `/api/v1/chats`                   | JWT  | Lista conversaciones del usuario. Incluye `unread_count` por chat. |
+| GET    | `/api/v1/chats/:orderId/messages` | JWT  | Mensajes de un chat (paginados). Marca el chat como leído.         |
+| POST   | `/api/v1/chats/:orderId/messages` | JWT  | Envía un mensaje (orden debe estar RESERVED).                      |
+
+> `unread_count` cuenta mensajes del otro participante no leídos. Se resetea automáticamente al llamar a `GET /chats/:orderId/messages` o al enviar un mensaje.
 
 ### Notifications
 

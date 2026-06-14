@@ -8,6 +8,7 @@ import {
   getOrderById,
   cancelOrder,
   deliverOrder,
+  listAllOrders,
 } from "#services/orders.service.js";
 import { CONSUMIDOR_DATA, setupWithPublication } from "#tests/helpers/fixtures.helper.js";
 
@@ -146,6 +147,65 @@ describe("cancelOrder", () => {
     const { consumerId, pubId } = await setupWithPublication();
     const order = await createOrder(consumerId, pubId);
     await expect(cancelOrder(order.id, "otro-id")).rejects.toMatchObject({ status: 403 });
+  });
+});
+
+describe("listOrders - filtros de fecha", () => {
+  const PAST = new Date(0).toISOString();
+  const FUTURE = new Date("2099-12-31").toISOString();
+
+  it("date_from en el pasado incluye órdenes recientes", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await createOrder(consumerId, pubId);
+    const result = await listOrders(consumerId, "CONSUMIDOR", { date_from: PAST });
+    expect(result.orders).toHaveLength(1);
+  });
+
+  it("date_to en el futuro incluye órdenes recientes", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await createOrder(consumerId, pubId);
+    const result = await listOrders(consumerId, "CONSUMIDOR", { date_to: FUTURE });
+    expect(result.orders).toHaveLength(1);
+  });
+
+  it("date_from en el futuro excluye órdenes recientes", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await createOrder(consumerId, pubId);
+    const result = await listOrders(consumerId, "CONSUMIDOR", { date_from: FUTURE });
+    expect(result.orders).toHaveLength(0);
+  });
+
+  it("date_to en el pasado excluye órdenes recientes", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await createOrder(consumerId, pubId);
+    const result = await listOrders(consumerId, "CONSUMIDOR", { date_to: PAST });
+    expect(result.orders).toHaveLength(0);
+  });
+
+  it("rango válido (pasado–futuro) incluye órdenes recientes", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await createOrder(consumerId, pubId);
+    const result = await listOrders(consumerId, "CONSUMIDOR", { date_from: PAST, date_to: FUTURE });
+    expect(result.orders).toHaveLength(1);
+  });
+});
+
+describe("listAllOrders - filtros de fecha", () => {
+  const PAST = new Date(0).toISOString();
+  const FUTURE = new Date("2099-12-31").toISOString();
+
+  it("date_from en el pasado incluye órdenes recientes", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await createOrder(consumerId, pubId);
+    const result = await listAllOrders({ date_from: PAST });
+    expect(result.orders).toHaveLength(1);
+  });
+
+  it("date_from en el futuro excluye órdenes recientes", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await createOrder(consumerId, pubId);
+    const result = await listAllOrders({ date_from: FUTURE });
+    expect(result.orders).toHaveLength(0);
   });
 });
 
