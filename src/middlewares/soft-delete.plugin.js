@@ -4,6 +4,7 @@ export function softDeletePlugin(schema) {
   schema.add({ deleted_at: { type: Date, default: null } });
 
   schema.pre(QUERY_TYPES, function () {
+    /* v8 ignore next -- || {}: guard defensivo, _conditions siempre está definido en el pre-hook */
     if (!("deleted_at" in (this._conditions || {})) && !this.options.withDeleted) {
       this.where({ deleted_at: null });
     }

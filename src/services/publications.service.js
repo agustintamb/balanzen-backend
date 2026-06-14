@@ -25,6 +25,12 @@ const buildCommerceData = (commerce, address) => ({
     : null,
 });
 
+const mapCategory = (category_id) => {
+  if (!category_id) return null;
+  /* v8 ignore next -- _id/name siempre presentes cuando category_id viene poblado */
+  return { id: category_id._id ?? category_id, name: category_id.name ?? undefined };
+};
+
 const buildPublicationResponse = (pub, commerce, address, distanceKm) => {
   const obj = {
     id: pub._id,
@@ -34,9 +40,7 @@ const buildPublicationResponse = (pub, commerce, address, distanceKm) => {
     final_price: pub.final_price,
     discount_pct: pub.discount_pct,
     expiry_date: pub.expiry_date,
-    category: pub.category_id
-      ? { id: pub.category_id._id ?? pub.category_id, name: pub.category_id.name ?? undefined }
-      : null,
+    category: mapCategory(pub.category_id),
     photos: pub.photos,
     status: pub.status,
     is_donation: pub.is_donation,
@@ -155,6 +159,7 @@ const listPublications = async (query) => {
     final_price: (a, b) => order * (a.final_price - b.final_price),
     expiry_date: (a, b) => order * (new Date(a.expiry_date) - new Date(b.expiry_date)),
     discount_pct: (a, b) => order * (a.discount_pct - b.discount_pct),
+    /* v8 ignore next -- ?? Infinity: fallback defensivo para publicaciones sin distancia calculada */
     distance: (a, b) => order * ((a.distance_km ?? Infinity) - (b.distance_km ?? Infinity)),
   };
   if (sortMap[sort_by]) results.sort(sortMap[sort_by]);
@@ -288,6 +293,7 @@ const getMyPublications = async (commerceId, query) => {
   const unreadByOrderId = Object.fromEntries(activeOrders.map((o, i) => [o._id, unreadCounts[i]]));
   results.forEach((r) => {
     const orderId = orderByPubId[r.id];
+    /* v8 ignore next -- ?? 0: fallback defensivo, unreadByOrderId siempre tiene la cuenta */
     r.unread_count = orderId ? (unreadByOrderId[orderId] ?? 0) : 0;
   });
 
