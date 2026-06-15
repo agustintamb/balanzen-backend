@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { connectDB, disconnectDB, clearDB } from "#tests/helpers/db.helper.js";
 import { register } from "#services/auth.service.js";
 import { Publication } from "#models/publication.model.js";
+import { Address } from "#models/address.model.js";
 import {
   createOrder,
   listOrders,
@@ -94,6 +95,37 @@ describe("getOrderById", () => {
 
     expect(result.id).toBe(order.id);
     expect(result.publication.id).toBe(pubId);
+  });
+
+  it("embebe la publicación completa y el avatar del consumer", async () => {
+    const { commerceId, consumerId, pubId } = await setupWithPublication();
+    await Address.create({
+      user_id: commerceId,
+      formatted_address: "Av. Corrientes 1234, CABA",
+      street: "Av. Corrientes",
+      number: "1234",
+      city: "CABA",
+      province: "Buenos Aires",
+      lat: -34.6037,
+      lng: -58.3816,
+      is_selected: true,
+    });
+    const order = await createOrder(consumerId, pubId);
+    const result = await getOrderById(order.id, consumerId);
+
+    expect(result.publication.description).toBeDefined();
+    expect(result.publication.original_price).toBe(2000);
+    expect(result.publication.final_price).toBe(1000);
+    expect(result.publication.discount_pct).toBe(50);
+    expect(result.publication.expiry_date).toBeDefined();
+    expect(result.publication.category.name).toBe("Verduras");
+    expect(result.publication.commerce.selected_address.lat).toBe(-34.6037);
+    expect(result.publication.commerce.selected_address.lng).toBe(-58.3816);
+    expect(result.publication.commerce.first_name).toBe("María");
+    expect(result.publication.commerce.last_name).toBe("López");
+    expect(result.publication.commerce.phone).toBe("1144556677");
+    expect(result.consumer).toHaveProperty("photo_url");
+    expect(result.consumer.phone).toBe("1155667788");
   });
 
   it("retorna el detalle del pedido para el comercio", async () => {

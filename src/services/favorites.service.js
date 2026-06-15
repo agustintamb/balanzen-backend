@@ -11,11 +11,22 @@ const addFavorite = async (userId, publicationId) => {
     throw err;
   }
 
-  const existing = await Favorite.findOne({ user_id: userId, publication_id: publicationId });
-  if (existing) {
+  const existing = await Favorite.findOne({
+    user_id: userId,
+    publication_id: publicationId,
+  }).setOptions({ withDeleted: true });
+
+  if (existing && !existing.deleted_at) {
     const err = new Error("La publicación ya está en favoritos");
     err.status = 409;
     throw err;
+  }
+
+  if (existing) {
+    existing.deleted_at = null;
+    existing.created_at = new Date();
+    await existing.save();
+    return { message: "Agregado a favoritos" };
   }
 
   await Favorite.create({ user_id: userId, publication_id: publicationId });

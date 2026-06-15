@@ -24,6 +24,19 @@ describe("addFavorite", () => {
     const { consumerId } = await setupWithPublication();
     await expect(addFavorite(consumerId, "pub-inexistente")).rejects.toMatchObject({ status: 404 });
   });
+
+  it("permite re-agregar tras quitar (toggle POST→DELETE→POST sin 409 por duplicado)", async () => {
+    const { consumerId, pubId } = await setupWithPublication();
+    await addFavorite(consumerId, pubId);
+    await removeFavorite(consumerId, pubId);
+    const result = await addFavorite(consumerId, pubId);
+    expect(result.message).toBe("Agregado a favoritos");
+
+    // Quedó un único favorito activo (se reactivó el doc, no se creó otro)
+    const list = await listFavorites(consumerId, {});
+    expect(list.favorites).toHaveLength(1);
+    expect(list.pagination.total).toBe(1);
+  });
 });
 
 describe("removeFavorite", () => {
