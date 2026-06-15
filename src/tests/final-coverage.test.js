@@ -12,8 +12,7 @@ import { createOrder, cancelOrder, deliverOrder, listAllOrders } from "#services
 import { addFavorite, listFavorites } from "#services/favorites.service.js";
 import { sendMessage } from "#services/chat.service.js";
 import * as notificationService from "#services/notification.service.js";
-import { createAddress, selectAddress } from "#services/addresses.service.js";
-import { searchAddresses } from "#services/addresses.service.js";
+import { createAddress, selectAddress, searchAddresses } from "#services/addresses.service.js";
 import {
   CONSUMIDOR_DATA,
   COMERCIO_DATA_NO_ADDR,

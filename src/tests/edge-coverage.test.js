@@ -21,9 +21,8 @@ import {
 } from "#services/orders.service.js";
 import { updateMyProfile } from "#services/users.service.js";
 import { addFavorite, listFavorites } from "#services/favorites.service.js";
-import { listChats } from "#services/chat.service.js";
+import { listChats, sendMessage } from "#services/chat.service.js";
 import { createAddress, selectAddress } from "#services/addresses.service.js";
-import { sendMessage } from "#services/chat.service.js";
 import { User } from "#models/user.model.js";
 import { authConsumer, bearer } from "#tests/helpers/auth.helper.js";
 import {
@@ -104,8 +103,8 @@ describe("changePassword - new !== confirm", () => {
 describe("categories.service updateCategory - variantes", () => {
   it("actualiza icon_url y active", async () => {
     const cat = await createCategory({ name: "Original" });
-    const res = await updateCategory(cat.id, { icon_url: "http://x/i.png", active: false });
-    expect(res.icon_url).toBe("http://x/i.png");
+    const res = await updateCategory(cat.id, { icon_url: "https://x/i.png", active: false });
+    expect(res.icon_url).toBe("https://x/i.png");
     expect(res.active).toBe(false);
   });
 
