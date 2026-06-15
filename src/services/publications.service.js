@@ -20,6 +20,9 @@ const haversineKm = (lat1, lng1, lat2, lng2) => {
 const buildCommerceData = (commerce, address) => ({
   id: commerce._id,
   business_name: commerce.business_name,
+  first_name: commerce.first_name,
+  last_name: commerce.last_name,
+  phone: commerce.phone,
   selected_address: address
     ? { formatted_address: address.formatted_address, lat: address.lat, lng: address.lng }
     : null,
@@ -294,6 +297,7 @@ const getMyPublications = async (commerceId, query) => {
   const unreadByOrderId = Object.fromEntries(activeOrders.map((o, i) => [o._id, unreadCounts[i]]));
   results.forEach((r) => {
     const orderId = orderByPubId[r.id];
+    r.order_id = orderId ?? null;
     /* v8 ignore next -- ?? 0: fallback defensivo, unreadByOrderId siempre tiene la cuenta */
     r.unread_count = orderId ? (unreadByOrderId[orderId] ?? 0) : 0;
   });
@@ -357,4 +361,6 @@ export {
   deletePublication,
   getMyPublications,
   listAllPublications,
+  buildPublicationResponse,
+  resolveCommerceAndAddress,
 };

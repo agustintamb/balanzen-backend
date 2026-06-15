@@ -10,7 +10,8 @@ import {
   deletePublication,
   getMyPublications,
 } from "#services/publications.service.js";
-import { COMERCIO_DATA } from "#tests/helpers/fixtures.helper.js";
+import { createOrder } from "#services/orders.service.js";
+import { COMERCIO_DATA, CONSUMIDOR_DATA } from "#tests/helpers/fixtures.helper.js";
 
 const PUB_DATA = (categoryId) => ({
   title: "Mix de verduras del día",
@@ -48,6 +49,9 @@ describe("createPublication", () => {
     expect(pub.status).toBe("ACTIVE");
     expect(pub.category.name).toBe("Verduras");
     expect(pub.commerce.business_name).toBe("Verdulería Don Mario");
+    expect(pub.commerce.first_name).toBe("María");
+    expect(pub.commerce.last_name).toBe("López");
+    expect(pub.commerce.phone).toBe("1144556677");
   });
 
   it("marca is_donation cuando original_price === final_price", async () => {
@@ -122,7 +126,6 @@ describe("listPublications", () => {
 
   it("min_discount con donation=false excluye donaciones del total", async () => {
     await setup();
-    // 1 descuento real (discount_pct = 50) + 1 donación (discount_pct = 100)
     await createPublication(commerceId, PUB_DATA(categoryId));
     await createPublication(commerceId, {
       ...PUB_DATA(categoryId),
@@ -265,5 +268,20 @@ describe("getMyPublications", () => {
     const result = await getMyPublications(commerceId, { status: "ACTIVE" });
     expect(result.publications).toHaveLength(1);
     expect(result.publications[0].title).toBe("Activa");
+  });
+
+  it("incluye order_id en publicaciones RESERVED y null en las demás", async () => {
+    await setup();
+    const reserved = await createPublication(commerceId, PUB_DATA(categoryId));
+    await createPublication(commerceId, { ...PUB_DATA(categoryId), title: "Activa" });
+    const consumer = await register(CONSUMIDOR_DATA);
+    const order = await createOrder(consumer.id, reserved.id);
+    const result = await getMyPublications(commerceId, {});
+    const reservedItem = result.publications.find((p) => p.id === reserved.id);
+    const activeItem = result.publications.find((p) => p.title === "Activa");
+
+    expect(reservedItem.status).toBe("RESERVED");
+    expect(reservedItem.order_id).toBe(order.id);
+    expect(activeItem.order_id).toBeNull();
   });
 });
