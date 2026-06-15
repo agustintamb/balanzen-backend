@@ -147,9 +147,9 @@ describe("orders.service - ramas de error", () => {
 
 describe("auth.service - ramas de error", () => {
   it("register lanza 400 si COMERCIO no envía business_name/cuit", async () => {
-    const { business_name, cuit, ...sinDatos } = COMERCIO_DATA_NO_ADDR;
-    void business_name;
-    void cuit;
+    const sinDatos = { ...COMERCIO_DATA_NO_ADDR };
+    delete sinDatos.business_name;
+    delete sinDatos.cuit;
     await expect(register(sinDatos)).rejects.toMatchObject({ status: 400 });
   });
 
