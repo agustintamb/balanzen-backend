@@ -3,6 +3,10 @@ import { Publication } from "#models/publication.model.js";
 import { User } from "#models/user.model.js";
 import { Address } from "#models/address.model.js";
 import { createNotification } from "#services/notification.service.js";
+import {
+  buildPublicationResponse,
+  resolveCommerceAndAddress,
+} from "#services/publications.service.js";
 import { buildDateFilter } from "#utils/date-filter.helper.js";
 import { getUnreadCount } from "#utils/unread.helper.js";
 
@@ -27,7 +31,22 @@ const buildCommerceSnippet = async (commerceId) => {
 
 const buildConsumerSnippet = async (consumerId) => {
   const consumer = await User.findById(consumerId);
-  return { id: consumer._id, first_name: consumer.first_name, last_name: consumer.last_name };
+  return {
+    id: consumer._id,
+    first_name: consumer.first_name,
+    last_name: consumer.last_name,
+    phone: consumer.phone,
+    photo_url: consumer.photo_url,
+  };
+};
+
+const buildFullPublication = async (publicationId) => {
+  const pub = await Publication.findWithDeleted({ _id: publicationId })
+    .populate("category_id", "name")
+    .then((r) => r[0]);
+  if (!pub) return null;
+  const { commerce, address } = await resolveCommerceAndAddress(pub.commerce_id);
+  return buildPublicationResponse(pub, commerce, address);
 };
 
 const buildOrderResponse = async (order, role) => {
@@ -152,15 +171,15 @@ const getOrderById = async (id, userId) => {
     throw err;
   }
 
-  const pub = await Publication.findWithDeleted({ _id: order.publication_id }).then((r) => r[0]);
-  const [consumer, commerceSnippet] = await Promise.all([
+  const [publication, consumer, commerceSnippet] = await Promise.all([
+    buildFullPublication(order.publication_id),
     buildConsumerSnippet(order.consumer_id),
     buildCommerceSnippet(order.commerce_id),
   ]);
 
   return {
     id: order._id,
-    publication: pub ? buildPublicationSnippet(pub) : null,
+    publication,
     consumer,
     commerce: commerceSnippet,
     status: order.status,
