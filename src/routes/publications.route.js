@@ -89,8 +89,10 @@ router.get(
  *                 type: string
  *               original_price:
  *                 type: number
+ *                 minimum: 0
  *               final_price:
  *                 type: number
+ *                 minimum: 0
  *               expiry_date:
  *                 type: string
  *                 format: date-time
@@ -113,7 +115,9 @@ router.post(
   roleMiddleware(["COMERCIO"]),
   body("title").notEmpty().withMessage("title es requerido"),
   body("description").notEmpty().withMessage("description es requerido"),
-  body("original_price").isFloat({ gt: 0 }).withMessage("original_price debe ser mayor a 0"),
+  body("original_price")
+    .isFloat({ min: 0 })
+    .withMessage("original_price debe ser mayor o igual a 0"),
   body("final_price").isFloat({ min: 0 }).withMessage("final_price debe ser un número positivo"),
   body("expiry_date").isISO8601().withMessage("expiry_date debe ser una fecha válida"),
   body("category_id").notEmpty().withMessage("category_id es requerido"),
@@ -204,7 +208,7 @@ router.get("/", authMiddleware, roleMiddleware(["CONSUMIDOR"]), listPublications
  *           type: string
  *     responses:
  *       200:
- *         description: Detalle de la publicación
+ *         description: Detalle de la publicación (incluye las canceladas/soft-deleted, para verlas read-only con su `status` real). Si la publicación está RESERVED, incluye `order_id` con el id de la orden activa de esa reserva; en cualquier otro estado se omite.
  *       404:
  *         description: Publicación no encontrada
  */
@@ -237,8 +241,10 @@ router.get("/:id", authMiddleware, getPublicationHandler);
  *                 type: string
  *               original_price:
  *                 type: number
+ *                 minimum: 0
  *               final_price:
  *                 type: number
+ *                 minimum: 0
  *               expiry_date:
  *                 type: string
  *                 format: date-time

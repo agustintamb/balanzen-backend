@@ -9,6 +9,7 @@ import {
 } from "#services/publications.service.js";
 import { buildDateFilter } from "#utils/date-filter.helper.js";
 import { getUnreadCount } from "#utils/unread.helper.js";
+import { broadcastPublicationChanged } from "#utils/publication-events.helper.js";
 
 const buildPublicationSnippet = (pub) => ({
   id: pub._id,
@@ -97,6 +98,9 @@ const createOrder = async (consumerId, publicationId) => {
   });
 
   await Publication.findByIdAndUpdate(publicationId, { status: "RESERVED" });
+
+  // Broadcast: la publicación deja de estar disponible para otros consumidores
+  broadcastPublicationChanged(publicationId, "RESERVED");
 
   const [consumer, commerceSnippet] = await Promise.all([
     buildConsumerSnippet(consumerId),
@@ -211,6 +215,8 @@ const cancelOrder = async (id, userId) => {
   const pub = await Publication.findWithDeleted({ _id: order.publication_id }).then((r) => r[0]);
   if (pub && new Date(pub.expiry_date) > new Date()) {
     await Publication.findByIdAndUpdate(order.publication_id, { status: "ACTIVE" });
+    // Broadcast: la publicación vuelve a estar disponible en los listados
+    broadcastPublicationChanged(order.publication_id, "ACTIVE");
   }
 
   const isCancelledByConsumer = order.consumer_id === userId;

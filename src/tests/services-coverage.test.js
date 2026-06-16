@@ -199,4 +199,18 @@ describe("Publication.discount_pct (virtual)", () => {
     });
     expect(pub.discount_pct).toBe(100);
   });
+
+  it("retorna 0 en una donación gratuita (original_price 0), sin dividir por cero", () => {
+    const pub = new Publication({
+      commerce_id: "c1",
+      title: "x",
+      description: "y",
+      original_price: 0,
+      final_price: 0,
+      expiry_date: new Date(),
+      category_id: "cat",
+      is_donation: true,
+    });
+    expect(pub.discount_pct).toBe(0);
+  });
 });
