@@ -26,6 +26,10 @@ const reset = async () => {
 
   console.log("🗑️   Base de datos limpia");
 
+  // Iniciar con almenos una categoría "Otros" por defecto
+  await Category.create({ name: "Otros" });
+  console.log("✅  Categoría 'Otros' creada");
+
   await mongoose.disconnect();
   console.log("🔌  Desconectado");
 };
