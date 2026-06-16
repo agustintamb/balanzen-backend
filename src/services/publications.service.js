@@ -5,6 +5,7 @@ import { Address } from "#models/address.model.js";
 import { Order } from "#models/order.model.js";
 import { buildDateFilter } from "#utils/date-filter.helper.js";
 import { getUnreadCount } from "#utils/unread.helper.js";
+import { broadcastPublicationChanged } from "#utils/publication-events.helper.js";
 
 // Fórmula Haversine para distancia en km entre dos coordenadas
 const haversineKm = (lat1, lng1, lat2, lng2) => {
@@ -88,6 +89,10 @@ const createPublication = async (commerceId, data) => {
 
   const { commerce, address } = await resolveCommerceAndAddress(commerceId);
   const populated = await Publication.findById(pub._id);
+
+  // Broadcast: nueva publicación disponible en los listados
+  broadcastPublicationChanged(pub._id, pub.status);
+
   return buildPublicationResponse(
     { ...populated.toObject(), discount_pct: populated.discount_pct, category_id: category },
     commerce,
@@ -185,14 +190,26 @@ const listPublications = async (query) => {
 };
 
 const getPublicationById = async (id) => {
-  const pub = await Publication.findById(id).populate("category_id", "name");
+  // Incluye soft-deleted/canceladas: el dueño debe poder ver el detalle read-only
+  const pub = await Publication.findById(id)
+    .setOptions({ withDeleted: true })
+    .populate("category_id", "name");
   if (!pub) {
     const err = new Error("Publicación no encontrada");
     err.status = 404;
     throw err;
   }
   const { commerce, address } = await resolveCommerceAndAddress(pub.commerce_id);
-  return buildPublicationResponse(pub, commerce, address);
+  const response = buildPublicationResponse(pub, commerce, address);
+
+  // Para publicaciones RESERVED, incluir el id de la orden activa de esa reserva
+  if (pub.status === "RESERVED") {
+    const order = await Order.findOne({ publication_id: pub._id, status: "RESERVED" });
+    /* v8 ignore next -- ?? null: fallback defensivo, una pub RESERVED siempre tiene orden activa */
+    response.order_id = order?._id ?? null;
+  }
+
+  return response;
 };
 
 const updatePublication = async (id, commerceId, data) => {
@@ -263,6 +280,9 @@ const deletePublication = async (id, commerceId) => {
   }
   await Publication.findByIdAndUpdate(id, { status: "CANCELLED" });
   await pub.softDelete();
+
+  // Broadcast: la publicación deja de estar visible en los listados
+  broadcastPublicationChanged(id, "CANCELLED");
 };
 
 const getMyPublications = async (commerceId, query) => {
