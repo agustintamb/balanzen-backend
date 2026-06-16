@@ -30,8 +30,9 @@ publicationSchema.index({ category_id: 1 });
 publicationSchema.index({ expiry_date: 1 });
 
 publicationSchema.virtual("discount_pct").get(function () {
-  if (this.is_donation) return 100;
+  // Sin precio original (donación gratuita o 0): sin descuento y evita división por cero
   if (!this.original_price) return 0;
+  if (this.is_donation) return 100;
   return Math.round((1 - this.final_price / this.original_price) * 100);
 });
 
