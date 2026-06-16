@@ -64,6 +64,17 @@ describe("createPublication", () => {
     expect(pub.is_donation).toBe(true);
   });
 
+  it("acepta donación gratuita con original_price y final_price en 0", async () => {
+    await setup();
+    const pub = await createPublication(commerceId, {
+      ...PUB_DATA(categoryId),
+      original_price: 0,
+      final_price: 0,
+    });
+    expect(pub.is_donation).toBe(true);
+    expect(pub.discount_pct).toBe(0);
+  });
+
   it("lanza 404 si la categoría no existe", async () => {
     await setup();
     await expect(
@@ -176,6 +187,35 @@ describe("getPublicationById", () => {
 
   it("lanza 404 si no existe", async () => {
     await expect(getPublicationById("id-inexistente")).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("incluye order_id cuando la publicación está RESERVED", async () => {
+    await setup();
+    const pub = await createPublication(commerceId, PUB_DATA(categoryId));
+    const consumer = await register(CONSUMIDOR_DATA);
+    const order = await createOrder(consumer.id, pub.id);
+
+    const result = await getPublicationById(pub.id);
+    expect(result.status).toBe("RESERVED");
+    expect(result.order_id).toBe(order.id);
+  });
+
+  it("no incluye order_id cuando la publicación no está RESERVED", async () => {
+    await setup();
+    const pub = await createPublication(commerceId, PUB_DATA(categoryId));
+    const result = await getPublicationById(pub.id);
+    expect(result.status).toBe("ACTIVE");
+    expect(result.order_id).toBeUndefined();
+  });
+
+  it("retorna el detalle de una publicación cancelada (soft-deleted)", async () => {
+    await setup();
+    const pub = await createPublication(commerceId, PUB_DATA(categoryId));
+    await deletePublication(pub.id, commerceId);
+
+    const result = await getPublicationById(pub.id);
+    expect(result.id).toBe(pub.id);
+    expect(result.status).toBe("CANCELLED");
   });
 });
 

@@ -37,6 +37,17 @@ describe("POST /api/v1/publications", () => {
     expect(res.body.discount_pct).toBe(50);
   });
 
+  it("acepta una donación gratuita con precios en 0 (201)", async () => {
+    const { commerce, catId } = await setup();
+    const res = await request(app)
+      .post("/api/v1/publications")
+      .set("Authorization", bearer(commerce.token))
+      .send({ ...pubBody(catId), original_price: 0, final_price: 0 });
+    expect(res.status).toBe(201);
+    expect(res.body.is_donation).toBe(true);
+    expect(res.body.discount_pct).toBe(0);
+  });
+
   it("devuelve 403 si lo intenta un CONSUMIDOR (role middleware)", async () => {
     const { consumer, catId } = await setup();
     const res = await request(app)
@@ -155,5 +166,19 @@ describe("GET / PUT / DELETE /api/v1/publications/:id", () => {
       .delete(`/api/v1/publications/${id}`)
       .set("Authorization", bearer(commerce.token));
     expect(res.status).toBe(200);
+  });
+
+  it("devuelve el detalle de una publicación cancelada/soft-deleted (200)", async () => {
+    const { commerce, catId } = await setup();
+    const id = await createPub(commerce, catId);
+    await request(app)
+      .delete(`/api/v1/publications/${id}`)
+      .set("Authorization", bearer(commerce.token));
+
+    const res = await request(app)
+      .get(`/api/v1/publications/${id}`)
+      .set("Authorization", bearer(commerce.token));
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("CANCELLED");
   });
 });

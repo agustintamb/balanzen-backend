@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { Publication } from "#models/publication.model.js";
 import { createNotification } from "#services/notification.service.js";
 import { Notification } from "#models/notification.model.js";
+import { broadcastPublicationChanged } from "#utils/publication-events.helper.js";
 
 // Marca como EXPIRED las publicaciones ACTIVE vencidas y notifica al comercio
 export const runExpiredJob = async () => {
@@ -10,6 +11,8 @@ export const runExpiredJob = async () => {
 
   for (const pub of expired) {
     await Publication.findByIdAndUpdate(pub._id, { status: "EXPIRED" });
+    // Broadcast: la publicación vencida deja de estar visible en los listados
+    broadcastPublicationChanged(pub._id, "EXPIRED");
     await createNotification({
       userId: pub.commerce_id,
       type: "PUBLICATION_EXPIRED",
